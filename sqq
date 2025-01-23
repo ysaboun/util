@@ -1,0 +1,7 @@
+SELECT 
+    COUNT(CASE WHEN Lifetime < 2 * 30 * 86400 THEN 1 END) AS Tokens_Moins_De_2_Mois,
+    COUNT(CASE WHEN Lifetime < 1 * 30 * 86400 THEN 1 END) AS Tokens_Moins_De_1_Mois
+FROM 
+    tokens
+WHERE 
+    Lifetime > 0;  -- Pour ignorer les tokens déjà expirés
