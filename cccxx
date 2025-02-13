@@ -19,23 +19,34 @@ mobiles_associes AS (
         t.tel_type_tid = 'MOBILE' -- Assurez-vous que cette valeur correspond au type "mobile" dans votre système
 ),
 icm_avec_email_et_mobile AS (
-    SELECT DISTINCT
-        c.cnx_icm
+    SELECT
+        c.cnx_icm,
+        COUNT(DISTINCT e.eml_adresse) AS nb_emails,
+        COUNT(DISTINCT t.tel_numero) AS nb_mobiles,
+        COUNT(DISTINCT CASE WHEN t.tel_maj_dt >= ADD_MONTHS(SYSDATE, -12) THEN t.tel_numero END) AS nb_mobiles_1_an,
+        COUNT(DISTINCT CASE WHEN t.tel_maj_dt >= ADD_MONTHS(SYSDATE, -60) THEN t.tel_numero END) AS nb_mobiles_5_ans,
+        COUNT(DISTINCT CASE WHEN e.eml_maj_dt >= ADD_MONTHS(SYSDATE, -12) THEN e.eml_adresse END) AS nb_emails_1_an,
+        COUNT(DISTINCT CASE WHEN e.eml_maj_dt >= ADD_MONTHS(SYSDATE, -60) THEN e.eml_adresse END) AS nb_emails_5_ans
     FROM
         connexion c
-    WHERE
-        EXISTS (SELECT 1 FROM emails_associes e WHERE e.cnx_icm = c.cnx_icm)
-        AND EXISTS (SELECT 1 FROM mobiles_associes m WHERE m.cnx_icm = c.cnx_icm)
+    LEFT JOIN emails_associes e ON c.cnx_icm = e.cnx_icm
+    LEFT JOIN mobiles_associes t ON c.cnx_icm = t.cnx_icm
+    GROUP BY
+        c.cnx_icm
+    HAVING
+        COUNT(DISTINCT e.eml_adresse) > 1 -- Au moins 2 emails
+        AND COUNT(DISTINCT t.tel_numero) > 1 -- Au moins 2 mobiles
 )
 SELECT
-    c.cnx_icm,
-    COUNT(DISTINCT CASE WHEN t.tel_maj_dt >= ADD_MONTHS(SYSDATE, -12) THEN t.tel_numero END) AS nb_mobiles_1_an,
-    COUNT(DISTINCT CASE WHEN t.tel_maj_dt >= ADD_MONTHS(SYSDATE, -60) THEN t.tel_numero END) AS nb_mobiles_5_ans,
-    COUNT(DISTINCT CASE WHEN e.eml_maj_dt >= ADD_MONTHS(SYSDATE, -12) THEN e.eml_adresse END) AS nb_emails_1_an,
-    COUNT(DISTINCT CASE WHEN e.eml_maj_dt >= ADD_MONTHS(SYSDATE, -60) THEN e.eml_adresse END) AS nb_emails_5_ans
+    cnx_icm,
+    nb_emails,
+    nb_mobiles,
+    nb_mobiles_1_an,
+    nb_mobiles_5_ans,
+    nb_emails_1_an,
+    nb_emails_5_ans
 FROM
-    icm_avec_email_et_mobile c
-LEFT JOIN emails_associes e ON c.cnx_icm = e.cnx_icm
-LEFT JOIN mobiles_associes t ON c.cnx_icm = t.cnx_icm
-GROUP BY
-    c.cnx_icm;
+    icm_avec_email_et_mobile
+ORDER BY
+    nb_emails ASC,
+    nb_mobiles ASC;
