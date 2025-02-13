@@ -1,27 +1,41 @@
-WITH mobiles_associes AS (
+WITH emails_associes AS (
+    SELECT
+        c.cnx_icm,
+        e.eml_adresse,
+        e.eml_maj_dt
+    FROM
+        connexion c
+    JOIN email e ON c.personne_physique_id = e.eml_pers_id
+),
+mobiles_associes AS (
     SELECT
         c.cnx_icm,
         t.tel_numero,
-        t.tel_maj_dt,
-        COUNT(DISTINCT t.tel_numero) OVER (PARTITION BY c.cnx_icm) AS nb_mobiles
+        t.tel_maj_dt
     FROM
         connexion c
     JOIN telephone_per t ON c.personne_physique_id = t.tel_pers_id
     WHERE
         t.tel_type_tid = 'MOBILE' -- Assurez-vous que cette valeur correspond au type "mobile" dans votre système
+),
+icm_avec_email_et_mobile AS (
+    SELECT DISTINCT
+        c.cnx_icm
+    FROM
+        connexion c
+    WHERE
+        EXISTS (SELECT 1 FROM emails_associes e WHERE e.cnx_icm = c.cnx_icm)
+        AND EXISTS (SELECT 1 FROM mobiles_associes m WHERE m.cnx_icm = c.cnx_icm)
 )
 SELECT
-    cnx_icm,
-    nb_mobiles,
-    COUNT(CASE WHEN tel_maj_dt >= ADD_MONTHS(SYSDATE, -12) THEN tel_numero END) AS nb_mobiles_1_an,
-    COUNT(CASE WHEN tel_maj_dt >= ADD_MONTHS(SYSDATE, -60) THEN tel_numero END) AS nb_mobiles_5_ans
+    c.cnx_icm,
+    COUNT(DISTINCT CASE WHEN t.tel_maj_dt >= ADD_MONTHS(SYSDATE, -12) THEN t.tel_numero END) AS nb_mobiles_1_an,
+    COUNT(DISTINCT CASE WHEN t.tel_maj_dt >= ADD_MONTHS(SYSDATE, -60) THEN t.tel_numero END) AS nb_mobiles_5_ans,
+    COUNT(DISTINCT CASE WHEN e.eml_maj_dt >= ADD_MONTHS(SYSDATE, -12) THEN e.eml_adresse END) AS nb_emails_1_an,
+    COUNT(DISTINCT CASE WHEN e.eml_maj_dt >= ADD_MONTHS(SYSDATE, -60) THEN e.eml_adresse END) AS nb_emails_5_ans
 FROM
-    mobiles_associes
-WHERE
-    nb_mobiles >= 1 -- Au moins un mobile associé
+    icm_avec_email_et_mobile c
+LEFT JOIN emails_associes e ON c.cnx_icm = e.cnx_icm
+LEFT JOIN mobiles_associes t ON c.cnx_icm = t.cnx_icm
 GROUP BY
-    cnx_icm, nb_mobiles
-HAVING
-    COUNT(DISTINCT tel_numero) > 1 -- Au moins deux mobiles distincts
-ORDER BY
-    nb_mobiles DESC;
+    c.cnx_icm;
