@@ -1,0 +1,26 @@
+WITH icm_emails AS (
+    SELECT
+        c.cnx_icm,
+        e.email_id,
+        e.eml_maj_dt,
+        COUNT(e.email_id) OVER (PARTITION BY c.cnx_icm) AS nombre_emails
+    FROM
+        connexion c
+    JOIN
+        email e ON c.personne_physique_id = e.eml_pers_id
+)
+SELECT
+    cnx_icm,
+    COUNT(email_id) AS nombre_emails_total,
+    COUNT(CASE WHEN eml_maj_dt >= ADD_MONTHS(SYSDATE, -12) THEN email_id END) AS nombre_emails_1_an,
+    COUNT(CASE WHEN eml_maj_dt >= ADD_MONTHS(SYSDATE, -60) THEN email_id END) AS nombre_emails_5_ans
+FROM
+    icm_emails
+WHERE
+    nombre_emails >= 1
+GROUP BY
+    cnx_icm, nombre_emails
+HAVING
+    COUNT(email_id) > 1
+ORDER BY
+    nombre_emails_total DESC;
