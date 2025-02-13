@@ -1,26 +1,31 @@
-WITH icm_emails AS (
+WITH icm_mobiles AS (
     SELECT
         c.cnx_icm,
-        e.email_id,
-        e.eml_maj_dt,
-        COUNT(e.email_id) OVER (PARTITION BY c.cnx_icm) AS nombre_emails
+        COUNT(DISTINCT t.tel_numero) AS nombre_mobiles,
+        MAX(CASE WHEN e.eml_maj_dt >= ADD_MONTHS(SYSDATE, -12) THEN 1 ELSE 0 END) AS eml_maj_1_an,
+        MAX(CASE WHEN e.eml_maj_dt >= ADD_MONTHS(SYSDATE, -60) THEN 1 ELSE 0 END) AS eml_maj_5_ans
     FROM
         connexion c
-    JOIN
-        email e ON c.personne_physique_id = e.eml_pers_id
+        JOIN telephone_per t ON c.personne_physique_id = t.tel_pers_id
+        LEFT JOIN email e ON c.personne_physique_id = e.eml_pers_id
+    WHERE
+        t.tel_type_tid = 'MOBILE' -- Assurez-vous que cette valeur correspond au type mobile dans votre base
+    GROUP BY
+        c.cnx_icm
+    HAVING
+        COUNT(DISTINCT t.tel_numero) >= 1 -- Au moins un mobile associé
 )
 SELECT
     cnx_icm,
-    COUNT(email_id) AS nombre_emails_total,
-    COUNT(CASE WHEN eml_maj_dt >= ADD_MONTHS(SYSDATE, -12) THEN email_id END) AS nombre_emails_1_an,
-    COUNT(CASE WHEN eml_maj_dt >= ADD_MONTHS(SYSDATE, -60) THEN email_id END) AS nombre_emails_5_ans
+    nombre_mobiles,
+    SUM(eml_maj_1_an) AS nombre_eml_maj_1_an,
+    SUM(eml_maj_5_ans) AS nombre_eml_maj_5_ans
 FROM
-    icm_emails
-WHERE
-    nombre_emails >= 1
+    icm_mobiles
 GROUP BY
-    cnx_icm, nombre_emails
+    cnx_icm,
+    nombre_mobiles
 HAVING
-    COUNT(email_id) > 1
+    nombre_mobiles > 1 -- Seulement les ICM avec plusieurs mobiles
 ORDER BY
-    nombre_emails_total DESC;
+    nombre_mobiles DESC;
