@@ -1,4 +1,14 @@
-WITH emails_associes AS (
+WITH emails_en_doublon AS (
+    SELECT
+        e.eml_adresse
+    FROM
+        email e
+    GROUP BY
+        e.eml_adresse
+    HAVING
+        COUNT(DISTINCT e.eml_pers_id) > 1 -- Emails associés à plusieurs personnes physiques (doublons)
+),
+icm_avec_emails_en_doublon AS (
     SELECT
         c.cnx_icm,
         e.eml_adresse,
@@ -6,47 +16,17 @@ WITH emails_associes AS (
     FROM
         connexion c
     JOIN email e ON c.personne_physique_id = e.eml_pers_id
-),
-mobiles_associes AS (
-    SELECT
-        c.cnx_icm,
-        t.tel_numero,
-        t.tel_maj_dt
-    FROM
-        connexion c
-    JOIN telephone_per t ON c.personne_physique_id = t.tel_pers_id
     WHERE
-        t.tel_type_tid = 'MOBILE' -- Assurez-vous que cette valeur correspond au type "mobile" dans votre système
-),
-icm_avec_email_et_mobile AS (
-    SELECT
-        c.cnx_icm,
-        COUNT(DISTINCT e.eml_adresse) AS nb_emails,
-        COUNT(DISTINCT t.tel_numero) AS nb_mobiles,
-        COUNT(DISTINCT CASE WHEN t.tel_maj_dt >= ADD_MONTHS(SYSDATE, -12) THEN t.tel_numero END) AS nb_mobiles_1_an,
-        COUNT(DISTINCT CASE WHEN t.tel_maj_dt >= ADD_MONTHS(SYSDATE, -60) THEN t.tel_numero END) AS nb_mobiles_5_ans,
-        COUNT(DISTINCT CASE WHEN e.eml_maj_dt >= ADD_MONTHS(SYSDATE, -12) THEN e.eml_adresse END) AS nb_emails_1_an,
-        COUNT(DISTINCT CASE WHEN e.eml_maj_dt >= ADD_MONTHS(SYSDATE, -60) THEN e.eml_adresse END) AS nb_emails_5_ans
-    FROM
-        connexion c
-    LEFT JOIN emails_associes e ON c.cnx_icm = e.cnx_icm
-    LEFT JOIN mobiles_associes t ON c.cnx_icm = t.cnx_icm
-    GROUP BY
-        c.cnx_icm
-    HAVING
-        COUNT(DISTINCT e.eml_adresse) > 1 -- Au moins 2 emails
-        AND COUNT(DISTINCT t.tel_numero) > 1 -- Au moins 2 mobiles
+        e.eml_adresse IN (SELECT eml_adresse FROM emails_en_doublon) -- Filtre les emails en doublon
 )
 SELECT
     cnx_icm,
-    nb_emails,
-    nb_mobiles,
-    nb_mobiles_1_an,
-    nb_mobiles_5_ans,
-    nb_emails_1_an,
-    nb_emails_5_ans
+    COUNT(DISTINCT eml_adresse) AS nb_emails_en_doublon,
+    COUNT(DISTINCT CASE WHEN eml_maj_dt >= ADD_MONTHS(SYSDATE, -12) THEN eml_adresse END) AS nb_emails_1_an,
+    COUNT(DISTINCT CASE WHEN eml_maj_dt >= ADD_MONTHS(SYSDATE, -60) THEN eml_adresse END) AS nb_emails_5_ans
 FROM
-    icm_avec_email_et_mobile
+    icm_avec_emails_en_doublon
+GROUP BY
+    cnx_icm
 ORDER BY
-    nb_emails ASC,
-    nb_mobiles ASC;
+    nb_emails_en_doublon DESC;
