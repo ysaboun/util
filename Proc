@@ -1,0 +1,19 @@
+CREATE OR REPLACE PROCEDURE update_table1(
+    p_usernames IN SYS.ODCIVARCHAR2LIST, -- Liste des usernames
+    p_values IN SYS.ODCIVARCHAR2LIST -- Liste des valeurs correspondantes
+) AS
+BEGIN
+    FOR i IN 1 .. p_usernames.COUNT LOOP
+        UPDATE table1 t1
+        SET t1.att1 = p_values(i)
+        WHERE t1.statid = (
+            SELECT t2.stateid 
+            FROM table2 t2 
+            WHERE t2.username = p_usernames(i)
+        )
+        AND t1.attr_name = 'y';
+    END LOOP;
+
+    COMMIT;
+END;
+/
