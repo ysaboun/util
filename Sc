@@ -1,0 +1,26 @@
+DELETE FROM token
+WHERE token_id NOT IN (
+    -- Sélection du dernier token par username
+    SELECT token_id FROM (
+        SELECT token_id, 
+               row_number() OVER (PARTITION BY username ORDER BY date_created DESC) AS rn
+        FROM token
+    ) t1
+    WHERE rn = 1
+
+    UNION
+
+    -- Sélection du dernier access_token associé au dernier refresh_token
+    SELECT t2.token_id 
+    FROM token t2
+    JOIN (
+        SELECT state_id, token_id
+        FROM token
+        WHERE sub_type = 'refresh_token'
+        ORDER BY date_created DESC
+        LIMIT 1
+    ) latest_refresh ON t2.state_id = latest_refresh.state_id
+    WHERE t2.sub_type = 'access_token'
+    ORDER BY t2.date_created DESC
+    LIMIT 1
+);
