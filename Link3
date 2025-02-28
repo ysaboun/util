@@ -1,0 +1,62 @@
+Les **Universal Links (iOS)** et **App Links (Android)** sont sécurisés, mais ils ne sont pas infaillibles. Voici les principales **vulnérabilités** et attaques possibles associées à leur utilisation.  
+
+---
+
+## **1. Vulnérabilités sur Android (App Links)**
+### **🔴 Attaque par une application malveillante (App Impersonation)**
+- **Problème** : Si une application malveillante a le même **package name** que l’application légitime mais un certificat différent, elle ne pourra pas revendiquer un App Link car la signature SHA-256 ne correspondra pas.  
+- **Solution** : Grâce à `assetlinks.json`, Android bloque ce type d'attaque, sauf si un store alternatif permet une réinstallation de l’application avec un certificat non vérifié.  
+
+### **🔴 Mauvaise configuration du fichier `assetlinks.json`**
+- **Problème** : Si le fichier est mal structuré ou placé au mauvais endroit (`/.well-known/assetlinks.json`), Android ne pourra pas vérifier l’authenticité du lien.  
+- **Solution** : Vérifier que le fichier est bien accessible en HTTPS et correctement formaté.  
+
+### **🔴 Interception de liens avec un intent-filter trop large**
+- **Problème** : Si une application malveillante déclare un **intent-filter** pour intercepter tous les liens (`<data android:scheme="https" android:host="*"/>`), elle peut capturer des liens de n'importe quel domaine.  
+- **Solution** : Toujours restreindre les intent-filters à des domaines spécifiques et utiliser App Links (qui nécessitent une validation avec `assetlinks.json`).  
+
+---
+
+## **2. Vulnérabilités sur iOS (Universal Links)**
+### **🔴 Usurpation d'un domaine (Domain Spoofing)**
+- **Problème** : Contrairement à Android, iOS ne vérifie pas la signature de l’application. Une attaque possible serait d’exploiter une faille dans un site web légitime (ex : XSS, takeover de sous-domaine) pour modifier le fichier `apple-app-site-association` et ajouter une application malveillante.  
+- **Solution** : **Verrouiller l’accès au fichier AASA**, utiliser **HSTS (HTTP Strict Transport Security)** et surveiller la sécurité des sous-domaines.  
+
+### **🔴 Interception des liens Universal Links (Open Redirect)**
+- **Problème** : Si un site web autorise des redirections ouvertes (`example.com/redirect?url=https://attacker.com`), une application malveillante peut tromper l’utilisateur et ouvrir un lien non sécurisé.  
+- **Solution** : Toujours valider les redirections côté serveur et empêcher les redirections ouvertes.  
+
+### **🔴 Problème du "Failback" vers le Web**
+- **Problème** : Si une application n'est pas installée, le lien s’ouvre dans Safari. Si l'attaquant prend le contrôle du site web, il peut rediriger l’utilisateur vers une fausse page (phishing).  
+- **Solution** : Sécuriser le site web (HTTPS, CSP, monitoring).  
+
+---
+
+## **3. Vulnérabilités communes (iOS & Android)**
+### **🔴 Attaque par détournement d’intent (Android) ou d’URL Scheme (iOS)**
+- **Problème** : Une application peut enregistrer un schéma d’URL identique (`myapp://`), ce qui peut causer des attaques où l’application malveillante reçoit des données sensibles (tokens, identifiants).  
+- **Solution** : **Privilégier Universal Links/App Links** plutôt que des deep links classiques en `myapp://`.  
+
+### **🔴 Exposition accidentelle d’informations sensibles**
+- **Problème** : Un App Link/Universal Link contenant des **tokens d’authentification** ou **données sensibles** pourrait être capturé par un tiers (ex : logs système, applications intercepteurs).  
+- **Solution** : **Éviter d’inclure des données sensibles dans les URL** (utiliser un identifiant opaque et récupérer les données via une API sécurisée).  
+
+---
+
+## **📌 Conclusion : Comment sécuriser au mieux les Universal Links & App Links ?**
+✅ **Android :**  
+- Toujours configurer `assetlinks.json` correctement.  
+- Vérifier les **intent-filters** pour éviter les interceptions abusives.  
+- Éviter les liens contenant des données sensibles.  
+
+✅ **iOS :**  
+- Protéger le fichier `apple-app-site-association` (HTTPS, HSTS, no-cache).  
+- Éviter les redirections ouvertes sur le site web associé.  
+- Surveiller les sous-domaines pour éviter un takeover.  
+
+✅ **Sur les deux plateformes :**  
+- Éviter les liens contenant des tokens ou données sensibles.  
+- Surveiller la sécurité du site web lié aux Universal/App Links.  
+- Tester régulièrement avec des outils de pentesting (Burp Suite, adb, etc.).  
+
+Tu veux des conseils plus techniques sur un point précis ?
