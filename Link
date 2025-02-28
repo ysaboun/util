@@ -1,0 +1,18 @@
+Un **Universal Link (iOS)** ou un **App Link (Android)** est plus sécurisé qu'un deep link traditionnel pour plusieurs raisons :  
+
+### 1. **Vérification du domaine**  
+- Contrairement aux deep links classiques, les Universal Links et App Links nécessitent une validation du domaine via un fichier **`apple-app-site-association` (AASA)** pour iOS et **`assetlinks.json`** pour Android.  
+- Ces fichiers doivent être hébergés sur le domaine de l'application, prouvant ainsi que l'application est bien associée au site web.  
+
+### 2. **Protection contre l'hameçonnage (Phishing)**  
+- Avec un deep link classique (`myapp://page`), n'importe quelle application malveillante peut prétendre gérer le schéma d'URL personnalisé (`myapp://`).  
+- Un App Link ou Universal Link, en revanche, ne fonctionnera que si l'application est associée au domaine correspondant, empêchant ainsi les attaques d'usurpation d'identité.  
+
+### 3. **Fallback sécurisé vers le site web**  
+- Si l'application n'est pas installée, un Universal Link ou App Link redirige automatiquement l’utilisateur vers le site web officiel, contrairement aux deep links qui peuvent échouer ou nécessiter un redirectionneur intermédiaire potentiellement vulnérable.  
+
+### 4. **Blocage des redirections non autorisées**  
+- iOS et Android empêchent les applications tierces de capturer ou de modifier les Universal Links et App Links, contrairement aux deep links qui peuvent être interceptés par d'autres applications malveillantes.  
+
+### **Conclusion**  
+Les Universal Links et App Links sont plus sécurisés car ils s’appuient sur des mécanismes de validation du domaine, empêchent l'usurpation de liens, offrent un fallback fiable et ne peuvent pas être détournés par d’autres applications.
