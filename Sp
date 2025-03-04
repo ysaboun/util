@@ -1,0 +1,52 @@
+L’application d’une authentification multifactorielle (MFA) basée sur OAuth2 et OpenID Connect (OIDC) via **PingFederate/PingOne** peut être configurée de manière dynamique en fonction de plusieurs critères, comme **l’évaluation des risques** ou **le Client ID**. Voici comment ces approches fonctionnent :  
+
+---
+
+## 1️⃣ **MFA basé sur l’évaluation des risques**  
+L’évaluation des risques (ou **Risk-Based Authentication**, RBA) repose sur des politiques adaptatives qui analysent divers paramètres avant d’imposer une MFA. **PingOne Risk** permet d’intégrer cette logique.  
+
+### **Fonctionnement :**  
+1. **Analyse du Contexte d’Authentification**  
+   - Adresse IP (est-elle suspecte ou provient-elle d’un pays risqué ?)  
+   - Géolocalisation et cohérence avec la dernière connexion  
+   - Type d’appareil et empreinte digitale du navigateur  
+   - Historique de connexion de l’utilisateur  
+   - Détection d’anomalies (ex : connexion inhabituelle)  
+
+2. **Attribution d’un Score de Risque**  
+   - PingOne Risk génère un **score de risque** basé sur ces données.  
+
+3. **Application Dynamique de la MFA**  
+   - **Si le risque est faible** → Authentification sans MFA.  
+   - **Si le risque est élevé** → Déclenchement de la MFA (ex : OTP, authentification via une application mobile, WebAuthn, etc.).  
+
+4. **Intégration avec PingFederate**  
+   - PingFederate peut être configuré pour **interroger PingOne Risk** et **imposer ou non la MFA** en fonction du score de risque.  
+   - Cela se fait via **des policies dans PingFederate**, en configurant des règles conditionnelles sur l’authentification.  
+
+✅ **Avantage :** Expérience utilisateur améliorée (MFA seulement si nécessaire).  
+
+---
+
+## 2️⃣ **MFA basé sur le Client ID**  
+Ici, la MFA est appliquée **en fonction du client OAuth2** (application qui demande l’authentification).  
+
+### **Fonctionnement :**  
+1. Lorsqu’une application (Client ID spécifique) initie un **flux OAuth2/OIDC**, PingFederate examine le **Client ID** de la requête.  
+2. Une **policy d’authentification** est définie dans PingFederate, qui **force ou non la MFA** selon l’application.  
+   - **Exemple :**  
+     - Pour le Client ID **"app_sensible"**, PingFederate impose **une MFA stricte** (ex : OTP).  
+     - Pour le Client ID **"app_publique"**, seule une authentification simple est requise.  
+3. La **policy d’authentification** est configurée dans **les Adapter Contracts et les policies d’authentification** de PingFederate.  
+
+✅ **Avantage :** Gestion granulaire des exigences de MFA en fonction des applications.  
+❌ **Limite :** Ne prend pas en compte le risque dynamique (toutes les connexions d’un client donné auront la même politique MFA).  
+
+---
+
+## 🎯 **Quelle approche choisir ?**  
+- **Si la sécurité adaptative est prioritaire** → Utiliser **l’évaluation des risques** via PingOne Risk.  
+- **Si chaque application a des besoins spécifiques** → Utiliser **le Client ID** pour définir des MFA différentes.  
+- **Les deux peuvent être combinés** : appliquer une MFA basée sur le Client ID **et** conditionnée par un score de risque.  
+
+Tu veux plus de détails sur l’implémentation dans PingFederate ?
