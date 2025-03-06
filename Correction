@@ -1,0 +1,106 @@
+Ton serveur retourne une **erreur 404 pour `script.js`**, car **le chemin du fichier est mal défini**. Voici ce qui ne va pas et comment le corriger.
+
+---
+
+### **1. Problème dans ton code**
+- Tu définis `filePath` comme **`.` + req.url`,** ce qui donne un chemin relatif incorrect (`./script.js` au lieu de `./main-site/script.js` par exemple).
+- Ton fichier **`script.js`** n'est pas dans le bon chemin ou n'est pas bien pris en compte.
+- Ton serveur ne sert pas correctement les fichiers statiques dans **`main-site/`** et **`sub-site/`**.
+
+---
+
+### **2. Correction du code**
+Applique ces corrections pour que ton serveur fonctionne correctement :
+
+#### ✅ **Correction du serveur HTTP**
+```javascript
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+const server = http.createServer((req, res) => {
+    let filePath = path.join(__dirname, req.url);
+    
+    // Si la requête est pour la racine, charger index.html du main-site
+    if (req.url === '/' || req.url === '/main-site') {
+        filePath = path.join(__dirname, 'main-site', 'index.html');
+    } else if (req.url === '/sub-site') {
+        filePath = path.join(__dirname, 'sub-site', 'index.html');
+    }
+
+    // Déterminer le type de contenu selon l'extension
+    const ext = path.extname(filePath);
+    let contentType = 'text/html';
+
+    const mimeTypes = {
+        '.js': 'application/javascript',
+        '.css': 'text/css',
+        '.json': 'application/json',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.svg': 'image/svg+xml',
+    };
+
+    if (mimeTypes[ext]) {
+        contentType = mimeTypes[ext];
+    }
+
+    // Lire le fichier et le renvoyer
+    fs.readFile(filePath, (err, data) => {
+        if (err) {
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('404 Not Found');
+        } else {
+            res.writeHead(200, { 'Content-Type': contentType });
+            res.end(data);
+        }
+    });
+});
+
+// Démarrer le serveur sur le port 3000
+server.listen(3000, () => {
+    console.log('Serveur en cours d\'exécution sur http://localhost:3000');
+});
+```
+
+---
+
+### **3. Organisation des fichiers**
+Ton projet doit être structuré ainsi :
+
+```
+/ton-projet
+  /main-site
+    index.html
+    script.js
+  /sub-site
+    index.html
+  server.js
+```
+
+Dans **`main-site/index.html`**, assure-toi d'inclure `script.js` correctement :
+```html
+<script src="/main-site/script.js"></script>
+```
+
+---
+
+### **4. Tester**
+1. **Lancer le serveur :**
+   ```sh
+   node server.js
+   ```
+2. **Accéder aux fichiers dans le navigateur :**
+   - **http://localhost:3000/main-site** → doit charger `index.html` du `main-site`
+   - **http://localhost:3000/main-site/script.js** → doit afficher le fichier JS sans erreur `404`
+   - **http://localhost:3000/sub-site** → doit charger `index.html` du `sub-site`
+
+---
+
+### **5. Résumé des corrections**
+✅ **Utilisation correcte de `path.join(__dirname, req.url)`**  
+✅ **Ajout d'un mapping MIME pour servir les fichiers JS correctement**  
+✅ **Correction de l'organisation des fichiers pour que `script.js` soit bien servi**  
+
+Maintenant, **`script.js` ne retournera plus 404**, et ton serveur Node.js fonctionnera comme prévu.
