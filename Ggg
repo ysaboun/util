@@ -1,0 +1,82 @@
+L'erreur **"Cannot read properties of null (reading 'postMessage')"** signifie que `iframe.contentWindow` est `null`. Cela indique probablement que l'élément `<iframe>` n'est pas encore chargé ou n'existe pas au moment où ton script essaie d'exécuter `postMessage`.
+
+---
+
+### **1. Problème possible : `<iframe>` non chargé**
+Si le script s'exécute avant que l'élément `<iframe>` soit présent dans le DOM, alors `document.getElementById("subFrame")` retournera `null`, ce qui provoquera une erreur lorsque tu essaieras d'accéder à `iframe.contentWindow`.
+
+#### **✅ Solution : Exécuter le script après le chargement du DOM**
+Ajoute un écouteur `DOMContentLoaded` pour s'assurer que le DOM est chargé avant d'exécuter ton script :
+
+```javascript
+document.addEventListener("DOMContentLoaded", () => {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+            .then(() => console.log("Service Worker du main-site enregistré"));
+    }
+
+    const iframe = document.getElementById("subFrame");
+    const sendButton = document.getElementById("sendToken");
+
+    sendButton.addEventListener("click", () => {
+        if (!iframe.contentWindow) {
+            console.error("Erreur : L'iframe n'est pas encore chargé !");
+            return;
+        }
+        const token = "secret-token-123";
+        iframe.contentWindow.postMessage({ type: "TOKEN", token }, "http://localhost:3000");
+    });
+
+    window.addEventListener("message", (event) => {
+        if (event.origin !== "http://localhost:3000") return;
+        console.log("Message reçu du sous-domaine :", event.data);
+    });
+});
+```
+
+---
+
+### **2. Problème possible : L'`iframe` n'est pas bien défini dans le HTML**
+Vérifie que **ton `<iframe>` a bien un `id="subFrame"`** et pointe vers le bon sous-domaine.
+
+Exemple correct :
+```html
+<iframe id="subFrame" src="http://localhost:3000/sub-site/index.html"></iframe>
+<button id="sendToken">Envoyer Token</button>
+```
+
+---
+
+### **3. Problème possible : `iframe.contentWindow` non accessible à cause d'un problème CORS**
+Si `iframe.contentWindow` est `null`, il est possible que l'iframe ne charge pas correctement à cause d'un problème de politique de sécurité entre domaines.
+
+#### **✅ Solution : Vérifier l'URL de l'iframe**
+- Si le `main-site` est servi depuis `http://localhost:3000` et que le `sub-site` est aussi sur `http://localhost:3000`, **il ne devrait pas y avoir de problème CORS**.
+- Mais si ton sous-domaine est `http://sous-domaine.localhost:3000`, alors assure-toi que le fichier `/etc/hosts` contient bien :
+  ```
+  127.0.0.1 localhost
+  127.0.0.1 sous-domaine.localhost
+  ```
+  Et modifie l'URL de l'iframe :
+  ```html
+  <iframe id="subFrame" src="http://sous-domaine.localhost:3000/sub-site/index.html"></iframe>
+  ```
+
+---
+
+### **4. Tester et Vérifier**
+1. **Ouvre la console du navigateur (F12 > Console)** et vérifie :
+   - Si `iframe.contentWindow` est `null`, attends que l'iframe soit bien chargé.
+   - Si `postMessage` est bien envoyé et reçu correctement.
+2. **Assure-toi que le serveur sert correctement `sub-site/index.html`**.
+3. **Vérifie les erreurs dans la console et les logs du serveur Node.js**.
+
+---
+
+### **✅ Résumé des corrections**
+✔ **Attendre que le DOM soit chargé (`DOMContentLoaded`)**  
+✔ **Vérifier que l'iframe a bien l'ID `subFrame`**  
+✔ **Vérifier que l'iframe pointe vers la bonne URL**  
+✔ **S'assurer que `iframe.contentWindow` est bien accessible**  
+
+Avec ces corrections, ton **`postMessage` fonctionnera correctement** entre ton site et ton iframe !
