@@ -1,0 +1,67 @@
+Voici un script Node.js natif qui lit `fbrute.csv`, segmente les données par paquets de 250 éléments maximum et écrit les fichiers `ficm_X.txt` contenant les valeurs formatées.
+
+---
+
+### **Script : `extract_icm.js`**
+```javascript
+const fs = require("fs");
+
+const inputFile = "fbrute.csv";
+const CHUNK_SIZE = 250; // Limite max par fichier
+
+// Lecture du fichier CSV
+fs.readFile(inputFile, "utf8", (err, data) => {
+  if (err) {
+    console.error("Erreur lors de la lecture du fichier:", err);
+    return;
+  }
+
+  // Extraction des lignes et suppression des espaces vides
+  const icms = data.trim().split("\n").filter(line => line);
+
+  // Découpage en morceaux de 250 éléments
+  for (let i = 0, part = 1; i < icms.length; i += CHUNK_SIZE, part++) {
+    const icmChunk = icms.slice(i, i + CHUNK_SIZE);
+
+    // Création du fichier ficm_X.txt
+    const ficmFile = `ficm_${part}.txt`;
+    fs.writeFileSync(ficmFile, `'${icmChunk.join("','")}'`, "utf8");
+
+    console.log(`Fichier généré : ${ficmFile}`);
+  }
+});
+```
+
+---
+
+### **Explication :**
+1. **Lecture du fichier `fbrute.csv`** et nettoyage des lignes vides.
+2. **Segmentation des données** en lots de **250 éléments max**.
+3. **Écriture dans des fichiers** `ficm_1.txt`, `ficm_2.txt`, ... avec le format demandé.
+
+---
+
+### **Exécution :**
+Placez le script et `fbrute.csv` dans le même dossier, puis exécutez :
+```sh
+node extract_icm.js
+```
+
+---
+
+### **Exemple de sortie :**
+Si `fbrute.csv` contient :
+```
+icm1
+icm2
+icm3
+...
+icm251
+```
+Vous obtiendrez :
+- **`ficm_1.txt`** → `'icm1','icm2',...'icm250'`
+- **`ficm_2.txt`** → `'icm251',...'icm500'` (si plus de 250 lignes)
+
+---
+
+Le script assure que chaque fichier contient au **maximum 250 valeurs**, formatées correctement.
