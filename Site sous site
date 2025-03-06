@@ -1,0 +1,128 @@
+Voici un **Proof of Concept (PoC)** en **JavaScript** utilisant l'API **BroadcastChannel** pour partager un token entre `site.fr` et `sous-domaine.site.fr` via deux **Service Workers**.
+
+---
+
+### 🛠 **Architecture du PoC**  
+- Deux Service Workers : un pour `site.fr` et un pour `sous-domaine.site.fr`.
+- Un **BroadcastChannel** nommé `"auth-token-channel"` pour échanger les messages.
+- Un **token** stocké dans le Service Worker de `site.fr` et partagé avec `sous-domaine.site.fr`.
+
+---
+
+## 📌 **1. Service Worker pour `site.fr`**
+Fichier : `sw-main.js`
+```js
+self.addEventListener('install', (event) => {
+    console.log('[SW] Installé sur site.fr');
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+    console.log('[SW] Activé sur site.fr');
+});
+
+const channel = new BroadcastChannel('auth-token-channel');
+let token = 'SECRET-TOKEN-123'; // Simule un token
+
+channel.addEventListener('message', (event) => {
+    if (event.data.type === 'REQUEST_TOKEN') {
+        console.log('[SW site.fr] Envoi du token...');
+        channel.postMessage({ type: 'TOKEN_RESPONSE', token });
+    }
+});
+```
+
+---
+
+## 📌 **2. Service Worker pour `sous-domaine.site.fr`**
+Fichier : `sw-subdomain.js`
+```js
+self.addEventListener('install', (event) => {
+    console.log('[SW] Installé sur sous-domaine.site.fr');
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+    console.log('[SW] Activé sur sous-domaine.site.fr');
+});
+
+const channel = new BroadcastChannel('auth-token-channel');
+
+channel.addEventListener('message', (event) => {
+    if (event.data.type === 'TOKEN_RESPONSE') {
+        console.log('[SW sous-domaine] Token reçu:', event.data.token);
+    }
+});
+```
+
+---
+
+## 📌 **3. Code Frontend pour `site.fr`**
+Fichier : `index.html` (ou `script.js`)
+```js
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw-main.js')
+        .then(() => console.log('Service Worker site.fr enregistré'))
+        .catch(console.error);
+}
+
+const channel = new BroadcastChannel('auth-token-channel');
+
+function sendTokenRequest() {
+    console.log('[site.fr] Envoi de la demande de token...');
+    channel.postMessage({ type: 'REQUEST_TOKEN' });
+}
+
+document.getElementById('shareToken').addEventListener('click', sendTokenRequest);
+```
+HTML associé :
+```html
+<button id="shareToken">Partager Token</button>
+```
+
+---
+
+## 📌 **4. Code Frontend pour `sous-domaine.site.fr`**
+Fichier : `index.html` (ou `script.js`)
+```js
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw-subdomain.js')
+        .then(() => console.log('Service Worker sous-domaine enregistré'))
+        .catch(console.error);
+}
+
+const channel = new BroadcastChannel('auth-token-channel');
+
+function requestToken() {
+    console.log('[sous-domaine] Demande du token...');
+    channel.postMessage({ type: 'REQUEST_TOKEN' });
+}
+
+document.getElementById('requestToken').addEventListener('click', requestToken);
+```
+HTML associé :
+```html
+<button id="requestToken">Demander Token</button>
+```
+
+---
+
+## 🔥 **Explication & Fonctionnement**
+1. `site.fr` enregistre un Service Worker et stocke un **token**.
+2. `sous-domaine.site.fr` enregistre un autre Service Worker.
+3. Un canal **BroadcastChannel** `"auth-token-channel"` est ouvert des deux côtés.
+4. Quand l'utilisateur clique sur `Demander Token` sur `sous-domaine.site.fr`, une demande est envoyée via **BroadcastChannel**.
+5. `site.fr` écoute cette demande et répond avec le **token**.
+6. `sous-domaine.site.fr` reçoit et affiche le **token**.
+
+---
+
+## ⚠️ **Limitations et Sécurité**
+- **Ne pas utiliser ce PoC en production sans sécurisation** (ex : vérifier l'origine avant d'envoyer le token).
+- **Le BroadcastChannel ne fonctionne que pour les sous-domaines**, il ne traverse pas les domaines différents.
+- Pour des **cas plus sécurisés**, utilisez des **cookies HttpOnly**, du **Storage partagé** ou **WebSockets**.
+
+---
+
+### ✅ **Ce PoC est prêt à être testé !**  
+Tu peux le lancer sur un serveur local avec `localhost` et un sous-domaine (`127.0.0.1.nip.io`). Besoin d'aide pour ça ?
