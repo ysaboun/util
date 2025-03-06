@@ -1,0 +1,151 @@
+Oui, il existe plusieurs autres méthodes pour partager un **token OAuth2** entre un domaine (`www.site.fr`) et ses sous-domaines (`www.sous-domaine.site.fr`) sans utiliser un cookie avec `Domain=site.fr`. Voici quelques alternatives :  
+
+---
+
+### 1️⃣ **Stocker le token dans `localStorage` ou `sessionStorage` et le partager via `postMessage()`**  
+#### ✅ Avantages :  
+- Plus sécurisé que les cookies (pas exposé aux attaques CSRF).  
+- Permet un **contrôle plus granulaire** sur le partage du token.  
+
+#### ❌ Inconvénients :  
+- Le `localStorage` et le `sessionStorage` sont **isolés par origine**, donc un sous-domaine ne peut pas accéder directement aux données d'un autre domaine.  
+- Nécessite une **page intermédiaire** pour le partage.  
+
+#### 🔹 Comment faire ?  
+1. **Créer une page "passerelle"** (`auth-proxy.site.fr`) sur un domaine partagé.  
+2. Cette page expose un mécanisme de communication via `window.postMessage()`.  
+3. `www.site.fr` et `www.sous-domaine.site.fr` envoient un message à cette page pour récupérer le token.  
+
+**Exemple :**  
+
+Dans `www.site.fr` :  
+```js
+const authProxy = "https://auth-proxy.site.fr";
+const iframe = document.createElement("iframe");
+iframe.src = authProxy;
+iframe.style.display = "none";
+document.body.appendChild(iframe);
+
+window.addEventListener("message", (event) => {
+  if (event.origin === authProxy) {
+    const token = event.data.token;
+    console.log("Token reçu :", token);
+  }
+});
+
+iframe.onload = () => {
+  iframe.contentWindow.postMessage({ action: "getToken" }, authProxy);
+};
+```
+
+Dans `auth-proxy.site.fr` :  
+```js
+window.addEventListener("message", (event) => {
+  if (event.origin.endsWith(".site.fr")) {  
+    event.source.postMessage({ token: "mon-token" }, event.origin);
+  }
+});
+```
+
+---
+
+### 2️⃣ **Stocker le token côté serveur et l'échanger via des requêtes API**
+#### ✅ Avantages :  
+- Le token n'est jamais stocké sur le frontend, donc **plus sécurisé**.  
+- Fonctionne même si JavaScript est désactivé.  
+
+#### ❌ Inconvénients :  
+- **Nécessite un appel API** à chaque fois qu'un sous-domaine a besoin du token.  
+- Peut engendrer une légère **latence**.  
+
+#### 🔹 Comment faire ?  
+1. Lorsque l’utilisateur s’authentifie sur `www.site.fr`, un **token de session** est stocké sur le serveur.  
+2. Tous les sous-domaines (`www.sous-domaine.site.fr`) font une requête à une API (`api.site.fr/token`) pour récupérer le token via un **jeton de session ou un cookie sécurisé**.  
+
+**Exemple :**  
+
+Dans `www.sous-domaine.site.fr` :  
+```js
+fetch("https://api.site.fr/token", {  
+  credentials: "include" // Nécessaire pour envoyer les cookies
+})
+  .then(response => response.json())
+  .then(data => {
+    const token = data.token;
+    console.log("Token récupéré :", token);
+  });
+```
+
+Dans `api.site.fr` (Backend Express.js) :  
+```js
+app.get("/token", (req, res) => {
+  const userSession = getUserSession(req); // Récupère la session utilisateur
+  if (userSession) {
+    res.json({ token: userSession.token });
+  } else {
+    res.status(401).json({ error: "Non authentifié" });
+  }
+});
+```
+
+---
+
+### 3️⃣ **Utiliser le stockage `IndexedDB` partagé avec un iframe**
+#### ✅ Avantages :  
+- Fonctionne sans cookies.  
+- Stocke les tokens de façon **persistante**.  
+
+#### ❌ Inconvénients :  
+- IndexedDB est aussi **isolé par origine**, donc nécessite un **iframe**.  
+- Certains navigateurs bloquent l’accès à IndexedDB en **3rd-party context**.  
+
+#### 🔹 Comment faire ?  
+1. Créer une **page iframe** sur un domaine partagé (`auth-proxy.site.fr`).  
+2. Cet iframe gère un **IndexedDB** pour stocker et récupérer les tokens.  
+3. Les autres sous-domaines **communiquent avec l’iframe** via `postMessage()`.  
+
+---
+
+### 4️⃣ **Utiliser une redirection avec passage du token dans l'URL**
+#### ✅ Avantages :  
+- Simple à mettre en place.  
+- Fonctionne sans cookies ni localStorage.  
+
+#### ❌ Inconvénients :  
+- **Moins sécurisé**, car l’URL peut être stockée dans l’historique du navigateur.  
+- Risque d’exposition du token si l’URL est partagée.  
+
+#### 🔹 Comment faire ?  
+1. Lors de la connexion, rediriger l’utilisateur vers `www.sous-domaine.site.fr?token=xxxx`.  
+2. Sur `www.sous-domaine.site.fr`, récupérer le token via `window.location.search` et le stocker localement.  
+
+**Exemple :**  
+
+Dans `www.site.fr` :  
+```js
+window.location.href = "https://www.sous-domaine.site.fr?token=monToken";
+```
+
+Dans `www.sous-domaine.site.fr` :  
+```js
+const params = new URLSearchParams(window.location.search);
+const token = params.get("token");
+console.log("Token reçu :", token);
+```
+
+---
+
+## 🏆 Quelle méthode choisir ?
+| **Méthode** | **Sécurité** | **Simplicité** | **Performance** | **Cas d'usage** |
+|------------|-------------|----------------|-----------------|----------------|
+| **Cookies (`Domain=site.fr`)** | ⚠️ Moyen (CSRF possible) | ✅ Simple | 🚀 Rapide | Sessions persistantes |
+| **postMessage() avec localStorage** | ✅ Sécurisé | ⚠️ Complexe | 🚀 Rapide | Single Page Apps (SPA) |
+| **API backend (`api.site.fr/token`)** | ✅✅ Très sécurisé | ⚠️ Nécessite un backend | ⏳ Un peu plus lent | Sites nécessitant sécurité élevée |
+| **IndexedDB + iframe** | ✅ Sécurisé | ⚠️ Complexe | 🚀 Rapide | Apps nécessitant persistance |
+| **Passage du token via URL** | ⚠️ Risqué (exposition possible) | ✅ Très simple | 🚀 Rapide | Cas temporaires sans sécurité critique |
+
+Si tu veux **simplicité**, utilise les **cookies** avec `Domain=site.fr`.  
+Si tu veux **sécurité**, utilise une **API backend** pour récupérer le token.  
+Si tu veux une **solution front-end pure**, utilise **postMessage() avec une iframe**.  
+
+👉 **Tu veux que je t’aide à implémenter une solution en particulier ?**
