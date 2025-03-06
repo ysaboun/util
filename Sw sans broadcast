@@ -1,0 +1,148 @@
+Voici un **Proof of Concept (PoC) JavaScript complet** utilisant `iframe` et `postMessage` pour partager un **token** entre `site.fr` et `sous-domaine.site.fr` à l'aide de **deux Service Workers**.  
+Nous évitons `BroadcastChannel` et nous utilisons `postMessage` pour la communication.  
+
+---
+
+### 🔹 **Architecture du PoC**
+1. **Service Worker sur `site.fr`** : Enregistre le token et communique avec l'iframe via `postMessage`.
+2. **Iframe hébergé sur `sous-domaine.site.fr`** : Joue le rôle de proxy pour relayer le token.
+3. **Service Worker sur `sous-domaine.site.fr`** : Reçoit et stocke le token.
+
+---
+
+## 🔹 **1. Service Worker sur `site.fr` (`/sw.js`)**
+Ce Service Worker stocke un token et répond aux requêtes de la page principale.
+
+```js
+self.token = null;
+
+self.addEventListener("message", (event) => {
+    if (event.data.type === "SET_TOKEN") {
+        self.token = event.data.token;
+        event.ports[0].postMessage({ status: "TOKEN_SAVED" });
+    } else if (event.data.type === "GET_TOKEN") {
+        event.ports[0].postMessage({ token: self.token });
+    }
+});
+```
+
+---
+
+## 🔹 **2. Page principale sur `site.fr` (`index.html`)**
+Cette page injecte un iframe de `sous-domaine.site.fr`, envoie un token et demande sa récupération.
+
+```html
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Parent - site.fr</title>
+</head>
+<body>
+    <h1>Parent (site.fr)</h1>
+    <iframe id="relayFrame" src="https://sous-domaine.site.fr/relay.html" style="display:none;"></iframe>
+
+    <script>
+        navigator.serviceWorker.register('/sw.js').then(async (registration) => {
+            console.log("Service Worker du site principal enregistré.");
+            
+            let sw = await navigator.serviceWorker.ready;
+            
+            // Envoi du token au SW de site.fr
+            let messageChannel = new MessageChannel();
+            messageChannel.port1.onmessage = (event) => console.log("Réponse SW:", event.data);
+
+            sw.active.postMessage({ type: "SET_TOKEN", token: "SECRET_TOKEN" }, [messageChannel.port2]);
+            
+            let iframe = document.getElementById("relayFrame");
+
+            // Envoi du token vers l'iframe pour le partager au sous-domaine
+            iframe.onload = () => {
+                iframe.contentWindow.postMessage({ type: "SHARE_TOKEN", token: "SECRET_TOKEN" }, "https://sous-domaine.site.fr");
+            };
+
+            // Récupération du token depuis l'iframe
+            window.addEventListener("message", (event) => {
+                if (event.origin === "https://sous-domaine.site.fr" && event.data.type === "TOKEN_SHARED") {
+                    console.log("Token reçu depuis le sous-domaine:", event.data.token);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+```
+
+---
+
+## 🔹 **3. Page `relay.html` sur `sous-domaine.site.fr`**
+Joue le rôle de proxy pour transférer le token au Service Worker de `sous-domaine.site.fr`.
+
+```html
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Iframe Relay</title>
+</head>
+<body>
+    <script>
+        navigator.serviceWorker.register('/sw.js').then(() => {
+            console.log("Service Worker du sous-domaine enregistré.");
+        });
+
+        window.addEventListener("message", async (event) => {
+            if (event.origin === "https://site.fr" && event.data.type === "SHARE_TOKEN") {
+                let sw = await navigator.serviceWorker.ready;
+                
+                let messageChannel = new MessageChannel();
+                messageChannel.port1.onmessage = (event) => console.log("Réponse SW sous-domaine:", event.data);
+
+                // Envoi au SW du sous-domaine
+                sw.active.postMessage({ type: "SET_TOKEN", token: event.data.token }, [messageChannel.port2]);
+
+                // Confirme la réception au parent
+                event.source.postMessage({ type: "TOKEN_SHARED", token: event.data.token }, event.origin);
+            }
+        });
+    </script>
+</body>
+</html>
+```
+
+---
+
+## 🔹 **4. Service Worker sur `sous-domaine.site.fr` (`/sw.js`)**
+Stocke le token reçu de l'iframe.
+
+```js
+self.token = null;
+
+self.addEventListener("message", (event) => {
+    if (event.data.type === "SET_TOKEN") {
+        self.token = event.data.token;
+        event.ports[0].postMessage({ status: "TOKEN_SAVED" });
+    } else if (event.data.type === "GET_TOKEN") {
+        event.ports[0].postMessage({ token: self.token });
+    }
+});
+```
+
+---
+
+### ✅ **Comment ça marche ?**
+1. **`site.fr` enregistre un Service Worker** et stocke un token.
+2. **Il insère un iframe de `sous-domaine.site.fr`**.
+3. **Le token est envoyé à l'iframe** via `postMessage`.
+4. **L'iframe transfère le token à son propre Service Worker**.
+5. **`sous-domaine.site.fr` stocke le token** dans son Service Worker.
+6. **Le parent peut demander le token au sous-domaine plus tard**.
+
+---
+
+### 🔥 **Pourquoi cette méthode ?**
+✔ **Sécurité** : Utilise `postMessage` avec des restrictions d'origine.  
+✔ **Isolation** : Chaque domaine gère son propre SW.  
+✔ **Interopérabilité** : Fonctionne sans `BroadcastChannel`.  
+
+Tu peux tester ce PoC en hébergeant ces fichiers sur `site.fr` et `sous-domaine.site.fr`.
