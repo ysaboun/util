@@ -1,0 +1,215 @@
+Voici un **Proof of Concept (PoC) complet** en JavaScript utilisant **iframe** et `postMessage` pour partager un token entre `site.fr` et `sous-domaine.site.fr` à travers **deux Service Workers**, sans utiliser `BroadcastChannel`.  
+
+### **1. Plan du PoC**
+- Un **parent (site.fr)** qui charge un iframe pointant vers **le sous-domaine (sous-domaine.site.fr)**.
+- Un **Service Worker** enregistré sur chaque domaine pour intercepter et stocker les messages (`postMessage`).
+- Le **parent envoie un token** à l'iframe via `postMessage`.
+- L'iframe transmet le message à son **Service Worker**, qui le stocke.
+- Une API est exposée par le **Service Worker** du sous-domaine pour renvoyer le token au besoin.
+
+---
+
+## **2. Configuration et Code**
+### **A. Structure des fichiers**
+```
+/project
+│── /main-site
+│   ├── index.html
+│   ├── script.js
+│   ├── sw.js
+│── /sub-site
+│   ├── index.html
+│   ├── script.js
+│   ├── sw.js
+│── server.js
+```
+
+---
+
+### **B. Serveur Node.js pour tester en local**
+Crée un serveur HTTP simple avec **Node.js (sans Express)**.
+
+#### **`server.js`**
+```js
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+const serveFile = (filePath, res) => {
+    fs.readFile(filePath, (err, data) => {
+        if (err) {
+            res.writeHead(404);
+            res.end('Not Found');
+        } else {
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(data);
+        }
+    });
+};
+
+const server = http.createServer((req, res) => {
+    let filePath = '.' + req.url;
+    if (filePath === './') filePath = './main-site/index.html';
+    if (filePath === './sub-site') filePath = './sub-site/index.html';
+
+    let ext = path.extname(filePath);
+    let contentType = 'text/html';
+    if (ext === '.js') contentType = 'application/javascript';
+
+    fs.readFile(filePath, (err, data) => {
+        if (err) {
+            res.writeHead(404);
+            res.end('Not Found');
+        } else {
+            res.writeHead(200, { 'Content-Type': contentType });
+            res.end(data);
+        }
+    });
+});
+
+server.listen(3000, () => {
+    console.log('Serveur en cours d\'exécution sur http://localhost:3000');
+});
+```
+**Lance le serveur avec** :  
+```sh
+node server.js
+```
+
+---
+
+### **C. Code du site principal (`main-site`)**
+#### **1. `main-site/index.html`**
+```html
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main Site</title>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <h1>Main Site</h1>
+    <iframe id="subFrame" src="http://localhost:3000/sub-site" width="600" height="400"></iframe>
+    <button id="sendToken">Envoyer Token</button>
+</body>
+</html>
+```
+
+#### **2. `main-site/script.js`**
+```js
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+        .then(() => console.log("Service Worker du main-site enregistré"));
+}
+
+const iframe = document.getElementById("subFrame");
+const sendButton = document.getElementById("sendToken");
+
+sendButton.addEventListener("click", () => {
+    const token = "secret-token-123";
+    iframe.contentWindow.postMessage({ type: "TOKEN", token }, "http://localhost:3000");
+});
+
+window.addEventListener("message", (event) => {
+    if (event.origin !== "http://localhost:3000") return;
+    console.log("Message reçu du sous-domaine :", event.data);
+});
+```
+
+#### **3. `main-site/sw.js`**
+```js
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", () => self.clients.claim());
+
+self.addEventListener("message", (event) => {
+    console.log("[Main SW] Message reçu :", event.data);
+});
+```
+
+---
+
+### **D. Code du sous-domaine (`sub-site`)**
+#### **1. `sub-site/index.html`**
+```html
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sub Site</title>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <h1>Sub Site</h1>
+</body>
+</html>
+```
+
+#### **2. `sub-site/script.js`**
+```js
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+        .then(() => console.log("Service Worker du sous-site enregistré"));
+}
+
+let storedToken = null;
+
+window.addEventListener("message", (event) => {
+    if (event.origin !== "http://localhost:3000") return;
+    
+    if (event.data.type === "TOKEN") {
+        navigator.serviceWorker.controller.postMessage(event.data);
+    }
+    
+    event.source.postMessage({ type: "ACK", message: "Token reçu" }, event.origin);
+});
+```
+
+#### **3. `sub-site/sw.js`**
+```js
+let storedToken = null;
+
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", () => self.clients.claim());
+
+self.addEventListener("message", (event) => {
+    if (event.data.type === "TOKEN") {
+        storedToken = event.data.token;
+        console.log("[Sub SW] Token stocké :", storedToken);
+    }
+});
+
+self.addEventListener("fetch", (event) => {
+    if (event.request.url.endsWith("/get-token")) {
+        event.respondWith(new Response(storedToken || "Aucun token", { status: 200 }));
+    }
+});
+```
+
+---
+
+## **3. Explication et Tests**
+### **Tester en local**
+1. **Démarre le serveur** :
+   ```sh
+   node server.js
+   ```
+2. **Ouvre `http://localhost:3000`** dans un navigateur.
+3. **Clique sur "Envoyer Token"**, vérifie la console du navigateur :
+   - Le **parent envoie un token** à l'iframe.
+   - L'iframe le transfère à son **Service Worker**.
+   - L'ACK est renvoyé au **parent**.
+
+4. **Tester la récupération du token** :
+   - Ouvre la console et exécute :
+     ```js
+     fetch("http://localhost:3000/get-token").then(res => res.text()).then(console.log);
+     ```
+   - Vérifie que le token est bien stocké et retourné.
+
+---
+
+## **4. Conclusion**
+Ce PoC démontre comment utiliser `iframe` et `postMessage` pour partager un token entre `site.fr` et `sous-domaine.site.fr` en exploitant **deux Service Workers** sans `BroadcastChannel`. Tu peux l'étendre en sécurisant mieux les échanges (`postMessage` sécurisé, vérifications d'origine, chiffrement du token, etc.).
