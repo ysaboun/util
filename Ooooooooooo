@@ -1,0 +1,53 @@
+# Rapport sur l'utilisation de JWE et PKCE avec PingFederate et Apigee  
+
+## Introduction  
+L'authentification et l'autorisation sécurisées sont essentielles dans les architectures modernes d'API et d'identité. JSON Web Encryption (JWE) et Proof Key for Code Exchange (PKCE) sont deux mécanismes permettant d'améliorer la sécurité des échanges d’informations sensibles et du processus d’authentification basé sur OAuth2 et OpenID Connect. Ce rapport examine leur utilisation dans un environnement combinant PingFederate en tant qu’Identity Provider (IdP) et Apigee en tant que passerelle API.  
+
+---
+
+## 1. JSON Web Encryption (JWE)  
+
+### 1.1. Définition et Objectifs  
+Le JWE est une norme de la famille des JSON Web Tokens (JWT) qui permet le chiffrement des données afin de garantir leur confidentialité. Contrairement aux JWT classiques (JWS, signés mais non chiffrés), un JWE protège les informations en les rendant inaccessibles sans la clé de déchiffrement appropriée.  
+
+### 1.2. Utilisation avec PingFederate et Apigee  
+- **PingFederate** :  
+  - PingFederate peut générer des JWT chiffrés (JWE) pour protéger les informations utilisateur (claims) dans un ID Token ou un Access Token.  
+  - Il supporte plusieurs algorithmes de chiffrement (RSA-OAEP, AES-GCM, etc.).  
+  - Configuration : Un client OAuth2 peut être configuré pour exiger des tokens JWE en activant les options de chiffrement dans le modèle de token.  
+
+- **Apigee** :  
+  - Apigee peut intercepter, déchiffrer et valider les JWE lorsqu’il agit en tant que proxy API.  
+  - Implémentation possible via les policies "JWT Verify" et "Java Callout" pour traiter les tokens JWE en fonction des clés publiques/privées.  
+  - Apigee peut également générer des JWE avant de les transmettre à des services backend nécessitant des tokens chiffrés.  
+
+### 1.3. Cas d'usage  
+- Protéger les données sensibles dans un ID Token lorsqu'un client frontend ne doit pas avoir directement accès aux informations utilisateur.  
+- Assurer la confidentialité des Access Tokens stockés ou transmis via des réseaux non sécurisés.  
+
+---
+
+## 2. Proof Key for Code Exchange (PKCE)  
+
+### 2.1. Définition et Objectifs  
+PKCE est une extension du flux d’autorisation OAuth2 qui empêche les attaques par interception du code d'autorisation. Il est particulièrement utile pour les applications mobiles et single-page applications (SPA), qui ne peuvent pas stocker de manière sécurisée un secret client.  
+
+### 2.2. Utilisation avec PingFederate et Apigee  
+- **PingFederate** :  
+  - Prend en charge PKCE pour renforcer la sécurité des flux d’autorisation.  
+  - Configuration : Un client OAuth2 peut être configuré pour exiger PKCE en activant la vérification du `code_challenge`.  
+  - Il valide le `code_verifier` au moment de l’échange du code d’autorisation contre un Access Token.  
+
+- **Apigee** :  
+  - Peut agir en tant qu’intermédiaire entre l’application et l’IdP pour s’assurer que PKCE est bien utilisé.  
+  - Peut implémenter des contrôles personnalisés sur le `code_challenge` avant de rediriger l’utilisateur vers PingFederate.  
+  - Peut rejeter les demandes de token ne respectant pas la vérification du `code_verifier`.  
+
+### 2.3. Cas d'usage  
+- Sécuriser l'authentification des applications mobiles et SPA en empêchant le vol du code d’autorisation par un attaquant.  
+- Éviter les attaques par relecture en liant un `code_challenge` unique à chaque demande d’autorisation.  
+
+---
+
+## Conclusion  
+L’association de JWE et PKCE dans un environnement PingFederate et Apigee améliore considérablement la sécurité des échanges OAuth2/OpenID Connect. Le JWE garantit la confidentialité des tokens, tandis que PKCE protège le flux d’autorisation contre les attaques par interception. PingFederate, en tant qu’IdP, permet leur mise en œuvre native, et Apigee agit comme un point de contrôle avancé pour renforcer la sécurité et l’intégrité des flux OAuth2.
