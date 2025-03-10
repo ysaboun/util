@@ -1,0 +1,9 @@
+Dans le contexte de l'authentification unique (SSO) entre **Domaine 1** et **Domaine 2**, les termes **ID Token** et **Access Token** jouent des rôles distincts :
+
+**ID Token** : Émis lors de l'authentification via OpenID Connect, il contient des informations sur l'utilisateur (comme son identifiant, son nom, son email) et est destiné au client pour vérifier l'identité de l'utilisateur.
+
+**Access Token** : Émis par le serveur d'autorisation, il permet au client d'accéder aux ressources protégées en autorisant des actions spécifiques sur une API ou un service.
+
+Dans une solution SSO où **Domaine 1** et **Domaine 2** partagent un **SSO Token** ou un **sso_session_id**, ce jeton est généralement distinct des ID Tokens et Access Tokens. Il sert à maintenir l'état d'authentification de l'utilisateur entre les domaines. Par exemple, après une authentification réussie sur **Domaine 2**, un **SSO Token** est généré et partagé avec **Domaine 1**. Lorsque l'utilisateur accède à **Domaine 1**, ce dernier utilise le **SSO Token** pour vérifier l'authentification sans nécessiter une nouvelle connexion.
+
+En résumé, le **SSO Token** ou **sso_session_id** est spécifique au mécanisme SSO pour gérer l'état d'authentification entre les domaines, tandis que l'**ID Token** et l'**Access Token** ont des rôles spécifiques dans les protocoles d'authentification et d'autorisation. 
