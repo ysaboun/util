@@ -1,0 +1,9 @@
+Pour que **Domaine 1** obtienne le **SSO Token** nécessaire à l'authentification unique sans recourir aux cookies, plusieurs approches peuvent être envisagées, notamment :
+
+1. **Transmission directe du SSO Token depuis Domaine 2 à Domaine 1** : Après l'authentification initiale sur Domaine 2, ce dernier peut transmettre le SSO Token à Domaine 1 via une redirection HTTP ou un appel API sécurisé.
+
+2. **Utilisation d'un serveur centralisé de gestion des sessions** : Les deux domaines peuvent interagir avec un serveur centralisé qui stocke et gère les SSO Tokens, permettant ainsi à Domaine 1 de vérifier l'état d'authentification de l'utilisateur.
+
+3. **Partage du SSO Token via le stockage local ou des cookies partagés** : Si les domaines partagent une origine commune ou peuvent accéder à un espace de stockage partagé, le SSO Token peut être stocké dans le localStorage ou via des cookies configurés pour être accessibles par les deux domaines.
+
+Chaque méthode présente des avantages et des défis en termes de sécurité, de complexité d'implémentation et de compatibilité avec les navigateurs. Il est essentiel d'évaluer ces aspects pour choisir la solution la plus adaptée à votre architecture et à vos exigences de sécurité. 
