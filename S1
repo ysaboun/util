@@ -1,0 +1,136 @@
+### 🔹 **Détails techniques : PingFederate sans cookie via un SSO Token partagé**  
+
+Au lieu de s’appuyer sur un cookie de session navigateur, **PingFederate** peut :  
+1. **Stocker un SSO Token en base** (Redis, base SQL, session PingFederate).  
+2. **Accepter un SSO Token envoyé directement par Domaine 1** dans un header HTTP (`Authorization: Bearer <SSO Token>`).  
+
+➡ **Objectif** : Lorsqu’un utilisateur tente d’accéder à **Domaine 1**, PingFederate vérifie son authentification via ce **SSO Token** sans avoir besoin d’un cookie navigateur.  
+
+---
+
+## **🔹 1️⃣ Stockage du SSO Token en base après la première authentification**
+### **🔹 Lors de la première connexion via Domaine 2**  
+Quand l’utilisateur s’authentifie pour la première fois sur **Domaine 2**, PingFederate :  
+- Génère un **SSO Token** (JWT signé ou Token opaque).  
+- Stocke ce token en base de données (ou Redis) avec un mapping vers l’utilisateur.  
+- Associe une **date d’expiration** pour la gestion de session.  
+
+### **🔹 Exemple de SSO Token généré (JWT signé)**  
+```json
+{
+  "sub": "user123",
+  "session_id": "abcd-5678-efgh",
+  "iat": 1710000000,
+  "exp": 1710003600,
+  "scopes": ["openid", "profile", "email"],
+  "sso_session_id": "sso_98765"
+}
+```
+
+➡ **Stockage en base (SQL, Redis, NoSQL)**  
+```
+Table: sso_sessions  
+| sso_session_id | user_id  | token                  | expires_at          |
+|---------------|---------|-----------------------|---------------------|
+| sso_98765    | user123 | JWT_ABCD1234...       | 2025-03-10 14:30:00 |
+```
+
+---
+
+## **🔹 2️⃣ Vérification du SSO Token lors de l’accès à Domaine 1**
+### **🔹 Cas 1 : PingFederate vérifie le SSO Token en base**  
+1. **Domaine 1 redirige vers PingFederate avec un `session_id` dans la requête** :  
+   ```
+   GET https://pingfederate.com/as/authorize
+   ?client_id=domaine1
+   &response_type=code
+   &scope=openid profile email
+   &state=xyz123
+   &sso_session_id=sso_98765
+   ```
+
+2. **PingFederate recherche le `sso_session_id` en base** :  
+   ```sql
+   SELECT * FROM sso_sessions WHERE sso_session_id = 'sso_98765' AND expires_at > NOW();
+   ```
+
+3. **Si la session est valide** → Pas besoin de login, PingFederate génère directement un `code d’autorisation`.  
+4. **Si la session a expiré ou est absente** → L’utilisateur doit se reconnecter.  
+
+---
+
+### **🔹 Cas 2 : Domaine 1 envoie directement le SSO Token dans la requête**  
+Plutôt que d’envoyer un `sso_session_id`, Domaine 1 peut directement transmettre le **SSO Token** via un header HTTP.  
+
+1. **Requête de Domaine 1 vers PingFederate**  
+   ```
+   GET https://pingfederate.com/as/authorize
+   Authorization: Bearer JWT_ABCD1234...
+   ```
+
+2. **PingFederate vérifie et décode le JWT avec sa clé publique**  
+   ```python
+   import jwt  
+   from cryptography.hazmat.primitives.asymmetric import rsa  
+   from cryptography.hazmat.primitives import serialization  
+
+   # Charger la clé publique de PingFederate
+   public_key = serialization.load_pem_public_key(open("pingfederate_pub.pem", "rb").read())
+
+   # Décoder et vérifier le JWT
+   decoded_token = jwt.decode(
+       "JWT_ABCD1234...",
+       public_key,
+       algorithms=["RS256"]
+   )
+
+   print(decoded_token)
+   ```
+
+3. **Si le JWT est valide** → PingFederate saute l’authentification et génère un `code d’autorisation` pour Domaine 1.  
+4. **Si le JWT est expiré ou invalide** → L’utilisateur doit se reconnecter.  
+
+---
+
+## **🔹 3️⃣ Détails sur la sécurité et la gestion du SSO Token**
+### **🔹 Sécurisation du stockage en base**
+- **Expiration automatique** des tokens en base après un certain délai (`expires_at`).  
+- **Révocation possible** en supprimant l’entrée en base (`DELETE FROM sso_sessions WHERE sso_session_id = 'sso_98765'`).  
+
+### **🔹 Sécurisation de la transmission du token (header HTTP)**
+- Utilisation de **TLS (HTTPS obligatoire)** pour empêcher l’interception du token.  
+- Option : Restreindre le SSO Token à **des IPs spécifiques ou un User-Agent connu**.  
+
+### **🔹 Refresh Token pour prolonger la session**
+- Si la session expire, un **Refresh Token** peut être utilisé pour générer un nouveau SSO Token sans réauthentification complète.  
+- Exemple :  
+  ```
+  POST https://pingfederate.com/token
+  Authorization: Bearer REFRESH_TOKEN_ABC123
+  ```
+
+---
+
+## **🔹 4️⃣ Comparaison : Vérification via Base de données vs Token envoyé**
+| Méthode | Vérification en base | Token envoyé par Domaine 1 |
+|---------|---------------------|----------------------------|
+| **Stockage** | SSO Token en base (Redis, SQL) | Aucun stockage nécessaire |
+| **Vérification** | Requête SQL pour retrouver le token | Vérification via signature JWT |
+| **Performance** | Dépend de la latence DB | Plus rapide (aucun accès DB) |
+| **Sécurité** | Contrôlé côté serveur | Risque si le token est intercepté |
+| **Expiration** | Gérée en base (`expires_at`) | Intégrée dans le JWT |
+
+➡ **Recommandation** :  
+- **Pour une sécurité renforcée**, utiliser **SSO Token stocké en base** et récupéré via un `sso_session_id`.  
+- **Pour une meilleure performance**, privilégier **un JWT signé envoyé dans le header**.  
+
+---
+
+## **🔹 Conclusion**
+✅ **PingFederate peut gérer l’authentification sans cookies** en utilisant un **SSO Token stocké en base** ou **directement transmis** entre applications.  
+✅ **Deux options principales** :  
+- **Stocker le token en base** et l’identifier via un `sso_session_id` dans la requête.  
+- **Envoyer un JWT signé** dans le header HTTP pour éviter les accès en base.  
+✅ **Sécurité et expiration gérées** via des mécanismes comme Redis, JWT expiration et refresh tokens.  
+
+Tu veux des détails sur la configuration dans PingFederate (ex: OAuth AS, policies) ?
