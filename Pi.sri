@@ -1,0 +1,11 @@
+Effectivement, dans PingFederate, le paramètre `pi.sri` (Session Identifier) inclus dans le payload d'un jeton d'identité (ID Token) est utilisé pour identifier de manière unique la session d'un utilisateur au sein du système d'authentification. citeturn0search1
+
+Le `sso_session_id` est un identifiant de session spécifique à PingFederate qui fait référence à la session d'authentification active d'un utilisateur. citeturn0search2 Bien que le nom puisse varier, le `pi.sri` dans le payload du jeton d'identité correspond au `sso_session_id`.
+
+Pour inclure le `pi.sri` dans les ID Tokens émis par PingFederate, vous pouvez configurer cette option dans les paramètres de politique OpenID Connect :
+
+1. Accédez à **Applications > OAuth > OpenID Connect Policy Management** dans l'interface d'administration de PingFederate.
+2. Sélectionnez ou créez une politique OIDC.
+3. Cochez l'option **Include Session Identifier in ID Token** pour ajouter le `pi.sri` au payload du jeton. citeturn0search1
+
+Cette configuration permet aux applications partenaires de récupérer et d'utiliser l'identifiant de session pour gérer les sessions utilisateur de manière cohérente. 
