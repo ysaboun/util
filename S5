@@ -1,0 +1,25 @@
+Pour illustrer l'utilisation d'un **SSO Token** avec **PingFederate**, prenons l'exemple d'une organisation souhaitant intégrer plusieurs applications pour une authentification unique (SSO).
+
+### 1. **Configuration de PingFederate en tant que fournisseur d'identité (IdP)**
+
+PingFederate est configuré pour gérer l'authentification des utilisateurs et émettre des **SSO Tokens** lors de la connexion.
+
+- **Émission du SSO Token** : Lorsqu'un utilisateur s'authentifie avec succès, PingFederate génère un **SSO Token** (par exemple, un JWT) contenant des informations sur l'utilisateur et l'état de la session.
+
+### 2. **Partage du SSO Token entre les applications**
+
+Une fois le **SSO Token** émis, il est partagé entre les applications pour permettre une authentification transparente.
+
+- **Transmission du SSO Token** : Après l'authentification sur une application (par exemple, Domaine 2), le **SSO Token** est transmis à une autre application (Domaine 1) via une redirection HTTP ou un appel API sécurisé.
+
+### 3. **Utilisation du SSO Token par l'application cible**
+
+L'application cible (Domaine 1) reçoit le **SSO Token** et l'utilise pour authentifier l'utilisateur sans nécessiter une nouvelle connexion.
+
+- **Validation du SSO Token** : Domaine 1 valide le **SSO Token** en le décodant et en vérifiant sa signature, son intégrité et son expiration.
+
+- **Accès aux ressources protégées** : Une fois validé, l'utilisateur peut accéder aux ressources protégées de Domaine 1 sans nouvelle authentification.
+
+Cette approche garantit une expérience utilisateur fluide tout en maintenant des standards de sécurité élevés.
+
+Pour plus de détails sur la configuration de PingFederate pour l'émission et la gestion des **SSO Tokens**, vous pouvez consulter la documentation officielle de Ping Identity. citeturn0search0 
