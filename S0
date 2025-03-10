@@ -1,0 +1,108 @@
+Oui, dans **PingFederate**, il est possible de gérer l’état d’authentification d’un utilisateur sans utiliser de cookies en s’appuyant uniquement sur un **token partagé** (par exemple un **SSO Token, une session JWT ou un OAuth2 Access Token**). Voici comment cela peut être mis en œuvre et les implications techniques.  
+
+---
+
+### **🔹 Contexte : SSO sans cookie, basé sur un token partagé**
+Plutôt que d'utiliser un **cookie de session IdP** pour identifier un utilisateur déjà authentifié, on peut utiliser un **token centralisé** stocké dans un **stock de session côté serveur** ou transmis directement entre les applications.  
+
+- **Pourquoi éviter les cookies ?**  
+  - Certains environnements ne supportent pas bien les cookies (ex : restrictions navigateur, SSO entre domaines différents sans SameSite=None).  
+  - Meilleure sécurité en limitant les dépendances aux cookies de navigateur.  
+  - Permet une intégration plus fluide avec **applications mobiles ou API back-end**.  
+
+---
+
+## **🔹 Mécanisme avec PingFederate basé sur un Token Centralisé (Token Granting)**
+Au lieu d’un cookie, PingFederate peut utiliser un **SSO Token centralisé** stocké côté serveur ou directement échangé entre applications.  
+
+### **1️⃣ L’utilisateur s’authentifie une première fois via PingFederate (ex : sur Domaine 2)**  
+- L’utilisateur se connecte via l’IdP de PingFederate.  
+- Une session est créée côté **PingFederate Server**.  
+- **Plutôt que de stocker un cookie**, PingFederate génère un **SSO Token unique**.  
+- Ce token est stocké dans une **session centralisée** (Redis, Base de données, etc.) ou peut être transmis directement aux applications.  
+
+🔹 **Exemple de SSO Token généré (JWT signé ou Token opaque)**  
+```json
+{
+  "sub": "user123",
+  "session_id": "abcd-5678-efgh",
+  "iat": 1710000000,
+  "exp": 1710003600,
+  "scopes": ["openid", "profile", "email"]
+}
+```
+➡ Ce token peut être récupéré par **Domaine 2** et stocké localement.  
+
+---
+
+### **2️⃣ L’utilisateur accède à Domaine 1**
+- L’utilisateur visite **Domaine 1**.  
+- Domaine 1 ne trouve **pas de session locale**, donc il redirige vers PingFederate avec une requête OpenID Connect :  
+
+```
+GET https://pingfederate.com/as/authorize
+?client_id=domaine1
+&response_type=code
+&scope=openid profile email
+&state=xyz123
+```
+
+---
+
+### **3️⃣ PingFederate vérifie si l’utilisateur est déjà authentifié (sans cookie)**
+- **Plutôt que de vérifier un cookie de session**, PingFederate :  
+  - Vérifie si **un SSO Token valide est déjà enregistré en base**.  
+  - Ou **Domaine 1 envoie directement ce token** dans la requête (ex : via un header `Authorization: Bearer <SSO Token>`).  
+
+🔹 **Cas 1 : PingFederate trouve une session existante (Token en base ou envoyé dans la requête)**  
+✅ PingFederate **sautera la saisie des identifiants** et générera immédiatement un **nouveau code d'autorisation** pour Domaine 1.  
+
+🔹 **Cas 2 : PingFederate ne trouve pas de session active (Token expiré ou inexistant)**  
+❌ L'utilisateur devra se reconnecter.  
+
+---
+
+### **4️⃣ PingFederate émet un nouveau code d’autorisation pour Domaine 1**
+Si l’utilisateur est bien identifié via son SSO Token, PingFederate renvoie un **code d’autorisation** immédiatement :  
+
+```
+HTTP/1.1 302 Found
+Location: https://domaine1.com/callback
+?code=NEWCODE123
+&state=xyz123
+```
+
+Domaine 1 peut ensuite échanger ce code contre un **ID Token et un Access Token**, comme dans un flow OpenID Connect classique.  
+
+---
+
+### **🔹 Avantages de cette approche sans cookie**
+✅ **Indépendance des cookies navigateur** : Fonctionne même si les cookies sont bloqués ou supprimés.  
+✅ **Meilleure compatibilité inter-domaines** : Pas besoin de gérer SameSite=None pour des cookies cross-site.  
+✅ **Sécurité renforcée** :  
+   - Permet d’éviter l’exfiltration de cookies via des attaques XSS.  
+   - Le SSO Token peut être stocké sur un backend sécurisé (Redis, DB).  
+✅ **Facilement extensible pour les API et mobiles** :  
+   - Les clients mobiles peuvent stocker et réutiliser ce token sans interaction avec les cookies.  
+
+---
+
+### **🔹 Comparaison : SSO avec Cookie vs SSO avec Token Partagé**
+
+| Critère | SSO avec Cookie | SSO avec Token Partagé |
+|---------|---------------|--------------------|
+| **Stockage** | Cookie de session sur l’IdP | Stock en base (Redis, DB) ou token transmis |
+| **Navigateur requis** | Oui (cookies) | Non (API friendly) |
+| **Interopérabilité cross-domaine** | Problème possible avec SameSite | Facile avec un token centralisé |
+| **Sécurité XSS** | Risque de vol de cookie | Token peut être signé et sécurisé |
+| **Expiration** | Dépend du cookie | Géré avec TTL en base |
+
+---
+
+## **🔹 Conclusion**
+Avec **PingFederate**, il est tout à fait possible d’éviter les cookies en utilisant un **SSO Token** partagé entre les applications.  
+- **L’IdP PingFederate gère la session sur son backend** plutôt que via un cookie navigateur.  
+- Chaque application peut récupérer l’état d’authentification via un **SSO Token** transmis dans les requêtes.  
+- C’est une approche **plus flexible**, idéale pour les environnements **multi-domaines, mobiles ou API-first**.  
+
+Tu veux plus de détails sur l’implémentation technique (ex: PingAccess, stockage des tokens, validation du token) ?
