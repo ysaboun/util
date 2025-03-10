@@ -1,0 +1,29 @@
+### Introduction  
+
+Dans un écosystème numérique moderne, la gestion de l’identité et de l’authentification est un enjeu clé pour garantir la sécurité des accès et améliorer l’expérience utilisateur. Ce document d’architecture technique (DAT) présente une solution d’authentification basée sur OAuth2 et OpenID Connect, s’appuyant sur **PingFederate** comme Identity Provider (IdP), **PingDirectory** comme annuaire des identités, **PingOne MFA** pour la gestion de l’authentification forte, et **Apigee** comme API Gateway sécurisant les échanges entre les applications et les services backend. Cette architecture prend en charge différents cas d’usage, notamment l’authentification via des applications web et mobiles, ainsi que le Single Sign-On (SSO). L’objectif est de définir une architecture robuste garantissant sécurité, scalabilité et conformité aux standards d’authentification modernes.  
+
+---
+
+### Plan  
+
+1. **Vue d’architecture générale**  
+   - Présentation des composants et interactions entre les différentes briques techniques  
+   - Dépendances et intégrations avec les systèmes existants  
+
+2. **Spécifications générales**  
+   - Protocole d’authentification utilisé (OAuth2, OpenID Connect)  
+   - Gestion des sessions et jetons (Access Token, ID Token, Refresh Token)  
+   - Modèle d’autorisation et gestion des rôles  
+
+3. **Flux d’authentification**  
+   - **Application Web** : Authentification OpenID Connect via PingFederate, gestion des sessions avec SSO  
+   - **Application Mobile** : Authentification via OAuth2 PKCE, gestion du rafraîchissement des tokens  
+   - **Single Sign-On (SSO)** : Partage des sessions entre plusieurs applications grâce à PingFederate et PingOne MFA  
+
+4. **Mesures de sécurité**  
+   - Mise en place du MFA avec PingOne pour renforcer la sécurité des accès  
+   - Protection des API via Apigee (rate limiting, contrôle d’accès, analyse des requêtes suspectes)  
+   - Chiffrement des échanges et stockage sécurisé des identifiants  
+   - Journalisation et surveillance des authentifications pour la détection des anomalies  
+
+Ce document servira de base pour la mise en œuvre technique et l’intégration des différentes composantes de la solution d’authentification.
