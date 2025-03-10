@@ -1,0 +1,19 @@
+Dans le contexte de PingFederate, la gestion de l'authentification unique (SSO) entre un domaine principal (par exemple, site.fr) et un sous-domaine (par exemple, sous-domaine.site.fr) peut être abordée de deux manières :
+Utilisation d'un SSO Token partagé : Un jeton d'authentification unique est émis par PingFederate et partagé entre le domaine principal et le sous-domaine.
+Transmission de l'identifiant de session SSO (sso_session_id) : Le domaine principal transmet l'identifiant de session SSO au sous-domaine pour permettre une authentification transparente.
+Comparaison des approches :
+Méthode
+Avantages
+Inconvénients
+SSO Token partagé
+- Sécurité accrue : Le jeton peut être signé et chiffré, garantissant l'intégrité et la confidentialité des informations d'authentification. - Indépendance : Chaque domaine peut valider le jeton sans dépendre d'une session partagée.
+- Complexité de gestion : Nécessite la mise en place d'une infrastructure de gestion et de validation des jetons. - Synchronisation : Les jetons peuvent expirer ou être révoqués, nécessitant une gestion attentive de leur cycle de vie.
+Transmission de sso_session_id
+- Simplicité : Facilité de mise en œuvre en transmettant simplement l'identifiant de session entre les domaines. - Performance : Moins de surcharge liée à la création et à la validation de jetons.
+- Dépendance : Les domaines doivent partager un mécanisme de gestion de sessions, ce qui peut introduire des vulnérabilités si mal implémenté. - Portabilité limitée : Moins flexible si l'architecture évolue ou si des domaines externes doivent être intégrés.
+
+Recommandations :
+SSO Token partagé : Recommandé si une sécurité renforcée et une indépendance entre les domaines sont prioritaires. Cette approche est adaptée lorsque les domaines sont distribués ou gérés indépendamment.
+Transmission de sso_session_id : Appropriée pour des environnements avec des exigences de simplicité et une forte intégration entre les domaines, tout en étant conscients des implications en termes de sécurité et de gestion des sessions.
+Il est essentiel d'évaluer les besoins spécifiques de votre organisation, notamment en termes de sécurité, de complexité opérationnelle et d'évolutivité, pour choisir la méthode la plus adaptée à votre architecture SSO avec PingFederate.
+
