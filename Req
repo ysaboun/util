@@ -1,0 +1,8 @@
+Dans PingFederate, le paramètre `pi.sri` inclus dans le payload d'un jeton d'identité (ID Token) représente l'identifiant de session de l'utilisateur. Cet identifiant est utilisé pour suivre et gérer la session d'authentification de l'utilisateur au sein de PingFederate, notamment lors des processus de connexion et de déconnexion.
+
+Le nom `pi.sri` est une abréviation spécifique à PingFederate, où :
+
+- **`pi`** : probablement une abréviation de "Ping Identity", le nom de la société développant PingFederate.
+- **`sri`** : représente "Session Resource Identifier" ou "Session ID", faisant référence à l'identifiant unique de la session d'authentification de l'utilisateur.
+
+Ainsi, `pi.sri` est l'identifiant unique de la session d'authentification de l'utilisateur dans PingFederate. 
