@@ -1,0 +1,35 @@
+Dans le cadre de l'intégration entre **Domaine 1** et **Domaine 2**, deux mécanismes peuvent être utilisés pour maintenir l'état d'authentification de l'utilisateur : l'utilisation d'un **SSO Token** ou le partage du **sso_session_id**. Voici une comparaison détaillée de ces deux approches :
+
+**1. Utilisation d'un SSO Token (par exemple, un JWT)**
+
+*Avantages :*
+
+- **Portabilité** : Les tokens, tels que les JSON Web Tokens (JWT), sont facilement transférables entre différents systèmes et applications, facilitant ainsi l'intégration entre Domaine 1 et Domaine 2.
+- **Stateless** : Les tokens contiennent toutes les informations nécessaires à l'authentification et à l'autorisation, permettant une architecture sans état sur le plan serveur. Cela réduit la charge sur les serveurs et améliore la scalabilité.
+- **Sécurité** : Les tokens peuvent être signés et chiffrés, garantissant l'intégrité et la confidentialité des données transmises.
+
+*Inconvénients :*
+
+- **Gestion de la durée de vie** : Les tokens ont une durée de vie limitée et nécessitent une gestion appropriée des expirations et des renouvellements pour éviter les problèmes d'accès.
+- **Complexité de mise en œuvre** : La génération, la validation et le stockage sécurisé des tokens peuvent ajouter de la complexité au système.
+
+**2. Partage du sso_session_id**
+
+*Avantages :*
+
+- **Simplicité** : Partager un identifiant de session peut être plus simple à mettre en œuvre, surtout si les deux domaines partagent une infrastructure de session commune.
+- **Centralisation** : Le sso_session_id permet de centraliser la gestion des sessions sur le serveur d'authentification, facilitant le suivi et le contrôle des sessions actives.
+
+*Inconvénients :*
+
+- **Dépendance à l'infrastructure de session** : Cette approche nécessite que les serveurs des deux domaines puissent accéder et gérer les sessions de manière cohérente, ce qui peut être complexe si les domaines ont des infrastructures distinctes.
+- **État serveur** : Contrairement aux tokens, le partage du sso_session_id implique que le serveur doit maintenir l'état de la session, ce qui peut affecter la scalabilité et la résilience du système.
+
+**Conclusion :**
+
+Le choix entre l'utilisation d'un SSO Token et le partage du sso_session_id dépend des besoins spécifiques de votre architecture :
+
+- **Optez pour un SSO Token** si vous recherchez une solution évolutive, indépendante de l'infrastructure de session, et si vous êtes prêt à gérer la complexité supplémentaire liée à la sécurité et à la durée de vie des tokens.
+- **Optez pour le partage du sso_session_id** si vous privilégiez la simplicité et si vos domaines partagent une infrastructure de session commune qui facilite la gestion centralisée des sessions.
+
+Il est essentiel d'évaluer les exigences de sécurité, de scalabilité et de maintenance de votre système pour déterminer la solution la plus adaptée. 
