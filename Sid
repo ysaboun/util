@@ -1,0 +1,19 @@
+Dans **PingFederate**, le paramètre `pi.sri` présent dans le payload d'un jeton d'identification (ID Token) sert d'identifiant de session. Il est utilisé pour faciliter la gestion des sessions, notamment lors du processus de déconnexion unique (Single Logout - SLO). Ce paramètre permet aux applications partenaires, comme **PingAccess**, de gérer efficacement les sessions utilisateur en identifiant de manière unique la session active associée à un utilisateur donné. citeturn0search1
+
+**Utilité de `pi.sri`** :
+
+- **Gestion des sessions** : Le `pi.sri` permet aux applications de suivre et de gérer les sessions utilisateur de manière centralisée, assurant une expérience cohérente lors de l'accès aux ressources protégées.
+
+- **Déconnexion unique (SLO)** : Lors d'une déconnexion, le `pi.sri` est utilisé pour identifier et terminer toutes les sessions associées à l'utilisateur sur les différentes applications, garantissant ainsi que l'utilisateur est complètement déconnecté de tous les services. citeturn0search0
+
+**Configuration de `pi.sri` dans PingFederate** :
+
+Pour inclure le `pi.sri` dans les jetons ID, suivez ces étapes :
+
+1. Accédez à **Applications > OAuth > OpenID Connect Policy Management** dans l'interface d'administration de PingFederate.
+
+2. Créez ou modifiez une politique OIDC.
+
+3. Dans les paramètres de la politique, activez l'option **"Include Session Identifier in ID Token"**. Cela ajoutera le `pi.sri` au payload des jetons ID émis par PingFederate. citeturn0search1
+
+En résumé, le paramètre `pi.sri` est essentiel pour la gestion efficace des sessions et des processus de déconnexion dans un environnement utilisant PingFederate, en fournissant un identifiant unique pour chaque session utilisateur. 
