@@ -1,0 +1,54 @@
+Pour automatiser cette solution avec **Ping Identity**, voici comment structurer l’authentification contextuelle en combinant **PingFederate, PingOne MFA et PingDirectory**, sans intervention humaine jusqu’à l’accès à l’agent :  
+
+---
+
+## **🔹 Étapes et solutions techniques**  
+
+### **1️⃣ Réception de l’appel téléphonique**  
+- 📞 **Problème** : Identifier l’appelant sans intervention humaine.  
+- ✅ **Solution** : Intégrer un **serveur vocal interactif (IVR) intelligent** capable de récupérer le **numéro appelant** via **SIP/CTI** et de le transmettre à **PingFederate** via une API.  
+
+### **2️⃣ Challenge par nature de la demande**  
+- 🤔 **Problème** : Vérifier que l’appelant reconnaît l’opération demandée.  
+- ✅ **Solution** : L’IVR demande à l’utilisateur de confirmer la nature de l’opération (ex. "Souscription à une nouvelle option") par **saisie DTMF** ou **reconnaissance vocale**.  
+- ✅ **Technique** :  
+  - L’IVR envoie la réponse à un **endpoint sécurisé** qui interroge **PingFederate** pour initier l’authentification.  
+  - PingFederate stocke cette demande temporairement et génère un **challenge ID**.  
+
+### **3️⃣ Identification basée sur le numéro de téléphone**  
+- 🔎 **Problème** : Lier le numéro appelant à un compte client existant.  
+- ✅ **Solution** :  
+  - PingFederate interroge **PingDirectory** pour vérifier si le numéro correspond à un utilisateur enregistré.  
+  - Si l’utilisateur est trouvé, on récupère son **device ID** lié à PingOne MFA.  
+  - Si inconnu, on demande à l’IVR d’orienter vers un agent.  
+
+### **4️⃣ Envoi d’une notification Push pour l’authentification**  
+- 📲 **Problème** : Authentifier l’utilisateur de manière sécurisée.  
+- ✅ **Solution** :  
+  - PingFederate génère un **Push MFA Challenge** via **PingOne MFA**.  
+  - L’utilisateur reçoit une **notification push** sur son application mobile.  
+  - Il **valide l’authentification** en biométrie ou code PIN via l’application mobile.  
+
+### **5️⃣ Connexion au centre d’appel avec confirmation automatique**  
+- 🎙️ **Problème** : Une fois authentifié, transférer l’appel sans intervention humaine.  
+- ✅ **Solution** :  
+  - PingFederate valide le challenge et génère un **token sécurisé**.  
+  - L’IVR vérifie que l’utilisateur est authentifié via un **appel API** à PingFederate.  
+  - L’IVR **transfère automatiquement** l’appel à l’agent avec une **confiance établie**, évitant ainsi toute question d’authentification manuelle.  
+
+---
+
+## **🔹 Stack technique Ping Identity utilisée**  
+✅ **PingFederate** → Gestion du SSO, des tokens et orchestration de l’authentification  
+✅ **PingOne MFA** → Push Notification pour authentifier l’utilisateur  
+✅ **PingDirectory** → Vérification et stockage des numéros de téléphone  
+✅ **API IVR-CTI** → Connexion entre le serveur vocal interactif et PingFederate  
+
+---
+
+### **🎯 Résultat attendu**  
+✅ **Aucune intervention humaine avant la mise en relation avec l’agent.**  
+✅ **Sécurité renforcée grâce à l’authentification forte (MFA).**  
+✅ **Expérience fluide pour l’utilisateur.**  
+
+Tu veux que je détaille une architecture plus précise avec les flux API et les appels entre chaque composant ?
