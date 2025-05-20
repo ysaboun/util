@@ -1,0 +1,42 @@
+#!/bin/bash
+
+USERNAME="user"
+PASSWORD="pass"
+HOST="oracle.host"
+PORT="1521"
+SERVICE="orclpdb"
+
+TMP_DIR="/tmp/export"
+mkdir -p "$TMP_DIR"
+
+# Définir les plages ID à exporter (exemple 5 tranches)
+ID_RANGES=(
+  "1 3520000"
+  "3520001 7040000"
+  "7040001 10560000"
+  "10560001 14100000"
+  "14100001 17600000"
+)
+
+for i in "${!ID_RANGES[@]}"; do
+  range=(${ID_RANGES[i]})
+  ID_START=${range[0]}
+  ID_END=${range[1]}
+  PART_NUM=$((i+1))
+  
+  echo "Lancement export part $PART_NUM : IDs $ID_START à $ID_END"
+  
+  ./sql -s "${USERNAME}/${PASSWORD}@//${HOST}:${PORT}/${SERVICE}" \
+       "TMP_DIR=${TMP_DIR}" "PART_NUM=${PART_NUM}" "ID_START=${ID_START}" "ID_END=${ID_END}" \
+       @export_part.sql &
+done
+
+wait
+echo "Tous les exports sont terminés."
+
+# Optionnel : concaténation des CSV (en supprimant les en-têtes sauf pour le premier)
+head -n 1 "${TMP_DIR}/export_part1.csv" > "${TMP_DIR}/export_full.csv"
+for i in $(seq 1 ${#ID_RANGES[@]}); do
+  tail -n +2 "${TMP_DIR}/export_part${i}.csv" >> "${TMP_DIR}/export_full.csv"
+done
+echo "Fichier export complet généré : ${TMP_DIR}/export_full.csv"
