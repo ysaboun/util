@@ -1,0 +1,16 @@
+COLUMN start_ts NEW_VALUE start_ts
+SELECT TO_CHAR(SYSTIMESTAMP, 'YYYY-MM-DD HH24:MI:SS.FF6') AS start_ts FROM dual;
+
+...
+
+COLUMN end_ts NEW_VALUE end_ts
+SELECT TO_CHAR(SYSTIMESTAMP, 'YYYY-MM-DD HH24:MI:SS.FF6') AS end_ts FROM dual;
+
+...
+
+PROMPT Durée totale :
+SELECT TO_CHAR(
+    TO_TIMESTAMP('&end_ts', 'YYYY-MM-DD HH24:MI:SS.FF6') -
+    TO_TIMESTAMP('&start_ts', 'YYYY-MM-DD HH24:MI:SS.FF6')
+) AS duree_execution
+FROM dual;
