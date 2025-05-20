@@ -1,0 +1,33 @@
+-- Connexion : connect user/password@TNS_ALIAS
+
+-- Définir le format CSV
+SET ECHO OFF
+SET FEEDBACK OFF
+SET PAGESIZE 0
+SET LINESIZE 1000
+SET TRIMSPOOL ON
+SET TERMOUT OFF
+SET HEADING ON
+SET COLSEP ','
+
+-- Chemin du fichier de sortie
+SPOOL /chemin/vers/export.csv
+
+-- Requête avec jointure (exemple entre EMPLOYE et DEPARTEMENT)
+SELECT 
+    e.emp_id,
+    e.nom,
+    e.prenom,
+    d.nom_departement,
+    TO_CHAR(e.date_embauche, 'YYYY-MM-DD') AS date_embauche
+FROM 
+    employe e
+JOIN 
+    departement d ON e.dept_id = d.dept_id;
+
+SPOOL OFF
+
+-- Réinitialisation
+SET TERMOUT ON
+SET ECHO ON
+SET FEEDBACK ON
