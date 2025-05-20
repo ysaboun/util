@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# === Configuration ===
+USERNAME="mon_user"
+PASSWORD="mon_motdepasse"
+HOST="mon.host.oracle.com"
+PORT="1521"
+SERVICE="MONSERVICE"
+SCRIPT_PATH="/chemin/vers/export_jointure_csv.sql"
+OUTPUT_DIR="/chemin/vers"
+TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
+LOG_FILE="$OUTPUT_DIR/export_${TIMESTAMP}.log"
+
+# === Vérification SQLcl installé ===
+if ! command -v sql &> /dev/null; then
+  echo "❌ SQLcl (commande 'sql') introuvable. Installe-le depuis : https://www.oracle.com/database/sqldeveloper/technologies/sqlcl/"
+  exit 1
+fi
+
+# === Exécution ===
+echo "▶️ Début de l’export à $(date)" | tee "$LOG_FILE"
+
+sql -s "${USERNAME}/${PASSWORD}@//${HOST}:${PORT}/${SERVICE}" @"$SCRIPT_PATH" > >(tee -a "$LOG_FILE") 2> >(tee -a "$LOG_FILE" >&2)
+
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -eq 0 ]; then
+  echo "✅ Export terminé avec succès à $(date)" | tee -a "$LOG_FILE"
+else
+  echo "❌ Échec de l’export (code $EXIT_CODE) à $(date)" | tee -a "$LOG_FILE"
+fi
