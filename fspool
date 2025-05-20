@@ -1,0 +1,74 @@
+-- ============================================
+-- EXPORT CSV Oracle SQLcl avec durée d'exécution
+-- ============================================
+
+-- Configuration de l'environnement SQLcl
+SET ECHO OFF
+SET FEEDBACK OFF
+SET HEADING ON
+SET PAGESIZE 0
+SET LINESIZE 1000
+SET TRIMSPOOL ON
+SET COLSEP ';'
+SET TERMOUT OFF
+SET VERIFY OFF
+SET DEFINE ON
+
+-- Horodatage pour les noms de fichiers
+COLUMN export_time NEW_VALUE export_time
+SELECT TO_CHAR(SYSDATE, 'YYYYMMDD_HH24MISS') AS export_time FROM dual;
+
+-- Début de l'export — capturer l'heure de départ
+COLUMN start_ts NEW_VALUE start_ts
+SELECT SYSTIMESTAMP AS start_ts FROM dual;
+
+-- Nombre de lignes exportées (à l'avance)
+COLUMN nb_lignes NEW_VALUE nb_lignes
+SELECT COUNT(*) AS nb_lignes
+FROM emp e
+JOIN dept d ON e.deptno = d.deptno;
+
+-- Export CSV
+SPOOL /chemin/vers/export_&export_time..csv
+
+SELECT
+    TRIM(e.empno),
+    TRIM(e.ename),
+    TRIM(e.job),
+    TO_CHAR(e.hiredate, 'YYYY-MM-DD'),
+    TRIM(e.sal),
+    TRIM(d.dname)
+FROM emp e
+JOIN dept d ON e.deptno = d.deptno;
+
+SPOOL OFF
+
+-- Heure de fin
+COLUMN end_ts NEW_VALUE end_ts
+SELECT SYSTIMESTAMP AS end_ts FROM dual;
+
+-- Calcul de durée (dans le log uniquement)
+SPOOL /chemin/vers/export_&export_time..log
+
+PROMPT === LOG EXPORT CSV ORACLE SQLcl ===
+PROMPT Date d’export         : &export_time
+PROMPT Heure de début        : &start_ts
+PROMPT Heure de fin          : &end_ts
+PROMPT Lignes exportées      : &nb_lignes
+
+PROMPT Durée totale :
+SELECT
+    TO_CHAR(
+        NUMTODSINTERVAL(TO_TIMESTAMP('&end_ts') - TO_TIMESTAMP('&start_ts'), 'DAY'),
+        'HH24:MI:SS.FF'
+    ) AS duree_execution
+FROM dual;
+
+PROMPT Fichier CSV généré    : /chemin/vers/export_&export_time..csv
+PROMPT Statut                : SUCCÈS
+
+SPOOL OFF
+
+-- Restauration de l'environnement
+SET TERMOUT ON
+SET FEEDBACK ON
