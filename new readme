@@ -1,0 +1,116 @@
+Voici une version mise à jour de ton `README.md` prenant en compte le **script `export.sh`** automatisé, ainsi que la configuration et les instructions pour l’exécuter proprement :
+
+---
+
+## 📄 `README.md` — Export Oracle vers CSV avec SQLcl
+
+### 🎯 Objectif
+
+Ce script permet d’exporter les résultats d’une requête SQL Oracle (incluant une jointure) dans un fichier **CSV** avec le séparateur `;`, tout en générant un **log détaillé** de l’exécution.
+
+Le script shell associé (`export.sh`) facilite l’exécution automatique avec horodatage, journalisation et contrôle d’erreur.
+
+---
+
+### 🛠️ Prérequis
+
+* Oracle SQLcl installé : [Télécharger SQLcl](https://www.oracle.com/database/sqldeveloper/technologies/sqlcl/)
+* Droits d’accès à la base Oracle distante
+* Droits en lecture/écriture sur le répertoire de sortie
+* Bash (Linux/MacOS) ou Git Bash (Windows)
+
+---
+
+### 📁 Contenu du dépôt
+
+| Fichier                   | Description                                       |
+| ------------------------- | ------------------------------------------------- |
+| `export_jointure_csv.sql` | Script SQL principal avec jointure et export CSV  |
+| `export.sh`               | Script shell pour lancer l’export automatiquement |
+| `README.md`               | Ce fichier de documentation                       |
+
+---
+
+### 📦 Exemple de sortie
+
+* CSV : `export_20250520_162505.csv`
+* Log : `export_20250520_162505.log`
+
+---
+
+### ▶️ Exécution rapide
+
+#### 1. Modifier la configuration dans `export.sh`
+
+```bash
+USERNAME="mon_user"
+PASSWORD="mon_motdepasse"
+HOST="oracle.host.com"
+PORT="1521"
+SERVICE="MONSERVICE"
+SCRIPT_PATH="/chemin/vers/export_jointure_csv.sql"
+OUTPUT_DIR="/chemin/vers"
+```
+
+#### 2. Rendre le script exécutable
+
+```bash
+chmod +x export.sh
+```
+
+#### 3. Lancer le script
+
+```bash
+./export.sh
+```
+
+---
+
+### ✅ Format du fichier CSV
+
+* **Séparateur :** `;`
+* **Encodage :** UTF-8 (par défaut)
+* **Colonnes :** extraites via une jointure SQL (modifiables dans le script)
+
+Exemple :
+
+```
+7369;SMITH;CLERK;1980-12-17;800;RESEARCH
+7499;ALLEN;SALESMAN;1981-02-20;1600;SALES
+```
+
+---
+
+### 📝 Contenu du fichier log
+
+Chaque exécution génère un log `.log` avec :
+
+* Date et heure de début
+* Heure de fin
+* Durée d'exécution
+* Nombre de lignes exportées (si logué)
+* Statut (`SUCCÈS` ou `ÉCHEC`)
+* Nom du fichier `.csv` généré
+
+---
+
+### 📌 Bonnes pratiques
+
+* Toujours exécuter avec `sql` (SQLcl) et **non** `sqlplus`
+* Utiliser `TO_CHAR()` pour formater les dates dans le SELECT
+* Vérifier le séparateur CSV via `SET COLSEP ';'` ou concaténation manuelle
+* Pour de très gros exports, rediriger la sortie vers un disque rapide (SSD)
+
+---
+
+### 📞 Support
+
+En cas d'erreur :
+
+* Vérifier que `sql` (SQLcl) est dans le `PATH`
+* Contrôler les droits sur le dossier de sortie
+* Lire le fichier `.log` généré pour plus de détails
+
+---
+
+Souhaites-tu que je t'ajoute un exemple **complet de requête avec jointure réelle**, ou un export multi-fichier (un par jour, par exemple) ?
