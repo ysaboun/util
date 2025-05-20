@@ -1,0 +1,4 @@
+if [ ! -x ./sql ]; then
+  echo "Erreur : ./sql non trouvé ou non exécutable dans $SQLCL_BIN_PATH"
+  exit 1
+fi
