@@ -1,0 +1,111 @@
+#!/bin/bash
+
+USERNAME="user"
+PASSWORD="pass"
+HOST="oracle.host"
+PORT="1521"
+SERVICE="orclpdb"
+
+TMP_DIR="/tmp/export"
+mkdir -p "$TMP_DIR"
+
+SQLCL_BIN="./sql"   # chemin vers sqlcl exécutable
+SCRIPT_BY_ID="export_part.sql"
+SCRIPT_BY_DATE="export_part_date.sql"
+
+# === Choix découpage (ID ou DATE) ===
+MODE="date"  # ou "id"
+
+if [[ "$MODE" == "id" ]]; then
+  # Plages ID (exemple 5 tranches)
+  RANGES=(
+    "1 3520000"
+    "3520001 7040000"
+    "7040001 10560000"
+    "10560001 14100000"
+    "14100001 17600000"
+  )
+else
+  # Plages dates (exemple 5 tranches d’un mois)
+  RANGES=(
+    "2024-01-01 2024-01-31"
+    "2024-02-01 2024-02-29"
+    "2024-03-01 2024-03-31"
+    "2024-04-01 2024-04-30"
+    "2024-05-01 2024-05-31"
+  )
+fi
+
+# Fonction qui lance un export et retourne 0 si OK, autre si erreur
+run_export() {
+  local part_num=$1
+  local param1=$2
+  local param2=$3
+
+  echo "Lancement export part $part_num"
+
+  if [[ "$MODE" == "id" ]]; then
+    $SQLCL_BIN -s "${USERNAME}/${PASSWORD}@//${HOST}:${PORT}/${SERVICE}" \
+      "TMP_DIR=${TMP_DIR}" "PART_NUM=${part_num}" "ID_START=${param1}" "ID_END=${param2}" \
+      @"$SCRIPT_BY_ID"
+  else
+    $SQLCL_BIN -s "${USERNAME}/${PASSWORD}@//${HOST}:${PORT}/${SERVICE}" \
+      "TMP_DIR=${TMP_DIR}" "PART_NUM=${part_num}" "DATE_START=${param1}" "DATE_END=${param2}" \
+      @"$SCRIPT_BY_DATE"
+  fi
+
+  return $?
+}
+
+# Boucle de lancement avec relance en cas d’erreur
+MAX_RETRIES=3
+declare -A retries
+
+for i in "${!RANGES[@]}"; do
+  retries[$i]=0
+done
+
+while : ; do
+  any_failed=0
+
+  for i in "${!RANGES[@]}"; do
+    if [[ ${retries[$i]} -ge $MAX_RETRIES ]]; then
+      echo "Partie $((i+1)) a échoué après $MAX_RETRIES tentatives, arrêt."
+      exit 1
+    fi
+
+    # Skip si déjà réussi (fichier existe)
+    PART_NUM=$((i+1))
+    OUTPUT_FILE="${TMP_DIR}/export_part${PART_NUM}.csv"
+    if [[ -f "$OUTPUT_FILE" ]]; then
+      echo "Partie $PART_NUM déjà exportée, skip."
+      continue
+    fi
+
+    range=(${RANGES[i]})
+    param1=${range[0]}
+    param2=${range[1]}
+
+    run_export $PART_NUM $param1 $param2
+    if [[ $? -ne 0 ]]; then
+      echo "Erreur export partie $PART_NUM, tentative $((retries[$i]+1))"
+      retries[$i]=$((retries[$i]+1))
+      any_failed=1
+    else
+      echo "Export partie $PART_NUM réussi."
+    fi
+  done
+
+  [[ $any_failed -eq 0 ]] && break
+
+  echo "Relance des parties en erreur..."
+done
+
+echo "Tous les exports sont terminés."
+
+# Optionnel : concaténation des CSV (en supprimant les en-têtes sauf pour le premier)
+head -n 1 "${TMP_DIR}/export_part1.csv" > "${TMP_DIR}/export_full.csv"
+for i in $(seq 1 ${#RANGES[@]}); do
+  tail -n +2 "${TMP_DIR}/export_part${i}.csv" >> "${TMP_DIR}/export_full.csv"
+done
+echo "Fichier export complet généré : ${TMP_DIR}/export_full.csv"
