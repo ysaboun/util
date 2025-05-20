@@ -1,0 +1,191 @@
+package com.example;
+
+import org.apache.commons.compress.archivers.tar.*;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.sql.*;
+import software.amazon.awssdk.auth.credentials.*;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.*;
+import software.amazon.awssdk.services.s3.model.*;
+
+import java.io.*;
+import java.net.URI;
+import java.nio.file.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.GZIPOutputStream;
+
+public class OracleToLdifJob {
+
+    public static void main(String[] args) throws Exception {
+        SparkSession spark = SparkSession.builder()
+                .appName("OracleToLdifJob")
+                .master("local[*]")
+                .getOrCreate();
+
+        // Config Oracle JDBC
+        String jdbcUrl = "jdbc:oracle:thin:@//host:1521/service_name";
+        String user = "oracle_user";
+        String password = "oracle_password";
+
+        // Lire la table ou requête Oracle via JDBC
+        Dataset<Row> df = spark.read()
+                .format("jdbc")
+                .option("url", jdbcUrl)
+                .option("dbtable", "COMPTES") // ou requête SQL entre parenthèses, ex: (SELECT * FROM comptes WHERE actif=1) alias
+                .option("user", user)
+                .option("password", password)
+                .option("fetchsize", 10000)
+                .load();
+
+        AtomicInteger fileIndex = new AtomicInteger(0);
+
+        // Transformer chaque ligne en entrée LDIF
+        JavaRDD<String> ldifRdd = df.javaRDD().map((Function<Row, String>) row -> {
+            long id = row.getAs("COMPTEID");
+            String nom = row.getAs("NOM");
+            String email = row.getAs("EMAIL");
+
+            return String.format(
+                    "dn: uid=%d,ou=comptes,dc=exemple,dc=org\n" +
+                    "objectClass: inetOrgPerson\n" +
+                    "uid: %d\n" +
+                    "cn: %s\n" +
+                    "mail: %s\n\n",
+                    id, id, nom, email);
+        });
+
+        // Écrire un fichier .ldif.gz par partition Spark
+        ldifRdd.foreachPartition(partition -> {
+            int index = fileIndex.getAndIncrement();
+            String filename = String.format("output/part-%03d.ldif.gz", index);
+            try (GZIPOutputStream gos = new GZIPOutputStream(new FileOutputStream(filename));
+                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(gos))) {
+                while (partition.hasNext()) {
+                    writer.write(partition.next());
+                }
+            }
+        });
+
+        spark.stop();
+
+        // Création de l'archive .tar.gz à partir des fichiers .ldif.gz
+        String outputDir = "output";
+        String tarGzPath = "output/all_ldif.tar.gz";
+        createTarGzFromFolder(outputDir, tarGzPath);
+
+        // Calcul de la somme de contrôle SHA-256
+        String sha256 = generateSha256Checksum(new File(tarGzPath));
+        Path shaFile = Paths.get("output/all_ldif.sha256");
+        Files.writeString(shaFile, sha256);
+
+        // Upload vers IBM COS
+        uploadToCOS(tarGzPath, "mon-bucket", "exports/all_ldif.tar.gz");
+        uploadToCOS(shaFile.toString(), "mon-bucket", "exports/all_ldif.sha256");
+
+        System.out.println("Traitement terminé avec succès.");
+    }
+
+    // Fonction pour créer une archive tar.gz depuis un dossier (fichiers ldif.gz)
+    public static void createTarGzFromFolder(String sourceDirPath, String tarGzPath) throws IOException {
+        try (FileOutputStream fos = new FileOutputStream(tarGzPath);
+             GZIPOutputStream gos = new GZIPOutputStream(fos);
+             TarArchiveOutputStream tos = new TarArchiveOutputStream(gos)) {
+
+            Path sourceDir = Paths.get(sourceDirPath);
+            Files.walk(sourceDir)
+                    .filter(path -> !Files.isDirectory(path) && path.toString().endsWith(".ldif.gz"))
+                    .forEach(path -> {
+                        File file = path.toFile();
+                        String entryName = sourceDir.relativize(path).toString();
+                        try (FileInputStream fis = new FileInputStream(file)) {
+                            TarArchiveEntry entry = new TarArchiveEntry(file, entryName);
+                            tos.putArchiveEntry(entry);
+
+                            byte[] buffer = new byte[4096];
+                            int len;
+                            while ((len = fis.read(buffer)) != -1) {
+                                tos.write(buffer, 0, len);
+                            }
+                            tos.closeArchiveEntry();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    });
+            tos.finish();
+        }
+    }
+
+    // Calcul de la somme de contrôle SHA-256 d'un fichier
+    public static String generateSha256Checksum(File file) throws IOException, NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        try (InputStream fis = new FileInputStream(file)) {
+            byte[] buffer = new byte[4096];
+            int read;
+            while ((read = fis.read(buffer)) != -1) {
+                digest.update(buffer, 0, read);
+            }
+        }
+        StringBuilder sb = new StringBuilder();
+        for (byte b : digest.digest()) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+    // Upload d'un fichier vers IBM Cloud Object Storage via SDK AWS S3
+    public static void uploadToCOS(String filePath, String bucket, String key) {
+        S3Client s3 = S3Client.builder()
+                .endpointOverride(URI.create("https://s3.eu-de.cloud-object-storage.appdomain.cloud"))
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create("COS_API_KEY", "COS_SECRET_KEY")))
+                .region(Region.EU_CENTRAL_1)
+                .build();
+
+        PutObjectRequest putRequest = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build();
+
+        s3.putObject(putRequest, RequestBody.fromFile(Paths.get(filePath)));
+        s3.close();
+    }
+}
+
+<dependencies>
+  <!-- Apache Spark -->
+  <dependency>
+    <groupId>org.apache.spark</groupId>
+    <artifactId>spark-core_2.12</artifactId>
+    <version>3.3.2</version>
+  </dependency>
+  <dependency>
+    <groupId>org.apache.spark</groupId>
+    <artifactId>spark-sql_2.12</artifactId>
+    <version>3.3.2</version>
+  </dependency>
+
+  <!-- Driver Oracle JDBC -->
+  <dependency>
+    <groupId>com.oracle.database.jdbc</groupId>
+    <artifactId>ojdbc8</artifactId>
+    <version>19.8.0.0</version>
+  </dependency>
+
+  <!-- Commons Compress (tar.gz) -->
+  <dependency>
+    <groupId>org.apache.commons</groupId>
+    <artifactId>commons-compress</artifactId>
+    <version>1.26.0</version>
+  </dependency>
+
+  <!-- AWS SDK S3 (pour COS) -->
+  <dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>s3</artifactId>
+    <version>2.25.2</version>
+  </dependency>
+</dependencies>
