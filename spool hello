@@ -1,0 +1,92 @@
+-- ============================
+-- EXPORT CSV avec logs & stats
+-- ============================
+
+-- Préparer l’environnement
+SET ECHO OFF
+SET FEEDBACK OFF
+SET HEADING ON
+SET PAGESIZE 0
+SET LINESIZE 1000
+SET TRIMSPOOL ON
+SET TERMOUT ON
+SET COLSEP ';'
+SET DEFINE OFF
+
+-- Log début
+PROMPT === Début de l'export : &&SYSDATE ===
+
+-- Variables
+COLUMN export_time NEW_VALUE export_time
+SELECT TO_CHAR(SYSDATE, 'YYYYMMDD_HH24MISS') AS export_time FROM dual;
+
+-- SPOOL dans fichier CSV
+SPOOL /chemin/vers/export_&&export_time..csv
+
+-- SPOOL dans fichier LOG
+SPOOL /chemin/vers/export_&&export_time..log APPEND
+
+PROMPT === Début de l'export CSV...
+PROMPT Export en cours...
+
+-- Compter le nombre de lignes à exporter
+VARIABLE nb_lignes NUMBER
+
+BEGIN
+    SELECT COUNT(*) INTO :nb_lignes
+    FROM emp e
+    JOIN dept d ON e.deptno = d.deptno;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Erreur lors du comptage des lignes : ' || SQLERRM);
+        RAISE;
+END;
+/
+
+-- Afficher le nombre total prévu
+PRINT nb_lignes
+PROMPT Nombre de lignes prévues : &nb_lignes
+
+-- Lancer la requête d'export
+PROMPT === Export des données ===
+
+SELECT
+    TRIM(e.empno),
+    TRIM(e.ename),
+    TRIM(e.job),
+    TO_CHAR(e.hiredate, 'YYYY-MM-DD'),
+    TRIM(e.sal),
+    TRIM(d.dname)
+FROM emp e
+JOIN dept d ON e.deptno = d.deptno;
+
+SPOOL OFF
+
+-- SPOOL log (fin)
+SPOOL /chemin/vers/export_&&export_time..log APPEND
+
+PROMPT === Export terminé à : &&SYSDATE ===
+PROMPT Nombre total de lignes exportées : &nb_lignes
+PROMPT === Fichier exporté : /chemin/vers/export_&&export_time..csv ===
+
+SPOOL OFF
+
+-- Restauration
+SET FEEDBACK ON
+SET TERMOUT ON
+
+
+export_YYYYMMDD_HHMMSS.csv → les données
+
+export_YYYYMMDD_HHMMSS.log → les logs humains lisibles
+
+Affichage console clair :
+
+mathematica
+Copier
+Modifier
+=== Début de l'export : 20250520 ===
+Nombre de lignes prévues : 42
+Export des données...
+=== Export terminé à : 20250520 ===
+Nombre total de lignes exportées : 42
