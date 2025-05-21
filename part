@@ -1,0 +1,23 @@
+WITH bornes AS (
+  SELECT
+    MIN(id_icm) AS min_id,
+    MAX(id_icm) AS max_id
+  FROM ma_table
+),
+parametres AS (
+  SELECT
+    min_id,
+    max_id,
+    (max_id - min_id + 1) AS total_span,
+    5 AS nb_partitions -- adapte ici le nombre de tranches souhaitées
+  FROM bornes
+),
+intervals AS (
+  SELECT
+    level AS part_num,
+    min_id + FLOOR((level - 1) * total_span / nb_partitions) AS id_min,
+    min_id + FLOOR(level * total_span / nb_partitions) - 1 AS id_max
+  FROM parametres
+  CONNECT BY level <= nb_partitions
+)
+SELECT * FROM intervals;
