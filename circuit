@@ -1,0 +1,44 @@
+
+## ✅ Exemple de configuration `application.yml`
+
+```yaml
+resilience4j:
+  circuitbreaker:
+    instances:
+      externalApi:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10 # Nombre total d’appels dans la fenêtre
+        minimumNumberOfCalls: 5 # Seuil pour commencer à mesurer les erreurs
+        failureRateThreshold: 50 # % d’échecs avant ouverture (ici, 50%)
+        waitDurationInOpenState: 30s # Temps avant tentative d’un appel (état HALF_OPEN)
+        permittedNumberOfCallsInHalfOpenState: 2 # Nb d’appels test autorisés
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        maxWaitDurationInHalfOpenState: 5s # Pour forcer la transition
+        recordExceptions:
+          - java.io.IOException
+          - org.springframework.web.client.HttpServerErrorException
+        ignoreExceptions:
+          - org.springframework.web.client.HttpClientErrorException$BadRequest
+```
+
+---
+
+## 🔍 Explication des paramètres clés
+
+| Paramètre | Description |
+| ---------------------------------------------- | ------------------------------------------------------- |
+| `slidingWindowType` | COUNT\_BASED ou TIME\_BASED (nombre d'appels ou durée) |
+| `slidingWindowSize` | Taille de la fenêtre d’échantillon (ex : 10 appels) |
+| `minimumNumberOfCalls` | Minimum d’appels requis pour évaluer l'état |
+| `failureRateThreshold` | Pourcentage d’échecs déclenchant l’ouverture du circuit |
+| `waitDurationInOpenState` | Temps d’attente avant test de réouverture |
+| `permittedNumberOfCallsInHalfOpenState` | Nb d’appels test en état HALF\_OPEN |
+| `automaticTransitionFromOpenToHalfOpenEnabled` | Reprise automatique sans action externe |
+| `recordExceptions` | Exceptions considérées comme des échecs |
+| `ignoreExceptions` | Exceptions à ignorer pour ne pas impacter le circuit |
+
+
+  * **Activer `automaticTransitionFromOpenToHalfOpenEnabled`** : très utile dans un système Kafka pour relancer automatiquement la consommation dès que l’API redevient disponible.
+* **`failureRateThreshold: 50`** et `minimumNumberOfCalls: 5` sont des bons points de départ.
+* **Utiliser avec `@KafkaListener(ackMode = MANUAL)`** pour éviter de perdre les messages pendant l’état `OPEN`.
