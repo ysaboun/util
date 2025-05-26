@@ -1,0 +1,64 @@
+---
+
+## **Objectif : rafraîchir le token sans perdre l’état WebView**
+
+Voici 2 **solutions robustes**, selon ce que tu peux faire côté SPA :
+
+---
+
+### **Solution 1 – Réinjecter dynamiquement le nouveau token sans recréer la WebView**
+
+**(idéal si tu ne veux rien perdre)**
+
+1. Côté Swift, quand tu détectes une erreur 401 :
+
+   * Rafraîchis le token côté natif (`getNewAccessToken`)
+   * Envoie le nouveau token **dans la WebView déjà chargée** via `evaluateJavaScript`
+
+2. Côté JS injecté, expose une méthode globale pour mettre à jour le token dans `fetch` et `XMLHttpRequest`.
+
+#### Extrait JS injecté :
+
+```js
+window.__updateAccessToken = function(newToken) {
+    accessToken = newToken;
+    console.log("Token updated:", accessToken);
+};
+```
+
+#### Côté Swift (après refresh réussi) :
+
+```swift
+let newToken = "xyz123"
+let js = "window.__updateAccessToken('\(newToken)');"
+webView.evaluateJavaScript(js, completionHandler: nil)
+```
+
+> Ensuite, les appels `fetch` continueront avec le nouveau token **sans recharger la page ni perdre l’action de l’utilisateur**.
+
+---
+
+### **Solution 2 – Sauvegarde/restauration de l’état si reload nécessaire**
+
+Si le token ne peut **pas être réinjecté dynamiquement**, tu peux :
+
+1. Demander à la SPA de **sauvegarder l’état dans `localStorage` ou `window.name`**
+2. Avant de détruire la WebView, lis cet état via `evaluateJavaScript`
+3. Après recréation, **réinjecte l’état** et **reprends la navigation ou l'action POST**
+
+Mais cette approche est plus lourde.
+
+---
+
+## **Conclusion :**
+
+**La meilleure approche est :**
+
+* **ne pas détruire la WebView**
+* **mettre à jour dynamiquement le token JS depuis Swift**
+
+Tu gardes ainsi :
+
+* le DOM intact,
+* l’action utilisateur,
+* les éléments en cours (POST, navigation, scroll, etc.).
