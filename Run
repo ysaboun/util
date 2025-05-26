@@ -1,7 +1,0 @@
-DECLARE
-    usernames SYS.ODCIVARCHAR2LIST := SYS.ODCIVARCHAR2LIST('user1', 'user2');
-    values_list SYS.ODCIVARCHAR2LIST := SYS.ODCIVARCHAR2LIST('val1', 'val2');
-BEGIN
-    update_table1(usernames, values_list);
-END;
-/
