@@ -1,0 +1,94 @@
+## **Objectif :**
+
+1. Chaque appel `fetch()` est intercepté.
+2. Si `401`, on sauvegarde les détails de la requête échouée.
+3. Quand Swift rafraîchit le token :
+
+   * On met à jour le token côté JS.
+   * On **rejoue uniquement les requêtes échouées**.
+
+---
+
+## **Solution JS injectée améliorée – gestion de plusieurs appels en échec**
+
+Voici un exemple robuste :
+
+### **1. JS injecté (injection à `.atDocumentStart`) :**
+
+```js
+(function () {
+    let accessToken = '<INITIAL_TOKEN>';
+    let retryQueue = [];
+
+    window.__updateAccessToken = function (newToken) {
+        accessToken = newToken;
+        console.log("Token updated:", accessToken);
+    };
+
+    window.__replayFailedRequests = async function () {
+        for (const { input, init, resolve, reject } of retryQueue) {
+            try {
+                init.headers = init.headers || {};
+                init.headers['Authorization'] = 'Bearer ' + accessToken;
+                const resp = await originalFetch(input, init);
+                resolve(resp);
+            } catch (err) {
+                reject(err);
+            }
+        }
+        retryQueue = [];
+    };
+
+    const originalFetch = window.fetch;
+    window.fetch = async function (input, init = {}) {
+        init.headers = init.headers || {};
+        init.headers['Authorization'] = 'Bearer ' + accessToken;
+
+        return new Promise(async (resolve, reject) => {
+            try {
+                const response = await originalFetch(input, init);
+
+                if (response.status === 401) {
+                    retryQueue.push({ input, init, resolve, reject });
+                    window.webkit.messageHandlers.authExpired.postMessage("401");
+                } else {
+                    resolve(response);
+                }
+            } catch (err) {
+                reject(err);
+            }
+        });
+    };
+})();
+```
+
+---
+
+### **2. Côté Swift : rafraîchir token et rejouer les requêtes échouées**
+
+```swift
+func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+    if message.name == "authExpired" {
+        refreshToken { newToken in
+            let js = """
+            window.__updateAccessToken('\(newToken)');
+            window.__replayFailedRequests();
+            """
+            DispatchQueue.main.async {
+                self.webView.evaluateJavaScript(js, completionHandler: nil)
+            }
+        }
+    }
+}
+```
+
+---
+
+## **Ce que fait ce système :**
+
+* Toutes les requêtes `fetch` sont surveillées.
+* Si `401`, elles sont **mémorisées dans `retryQueue` avec leur `resolve/reject`**.
+* Une fois que Swift donne un **nouveau token**, le JS appelle `__replayFailedRequests()` pour **rejouer les requêtes échouées**.
+* Le résultat est retourné comme si la requête avait réussi du premier coup.
+
+---
