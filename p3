@@ -1,0 +1,25 @@
+Tu dois appeler makeWebView(withAccessToken:) avant le load() parce que :
+
+1. Les scripts injectés (WKUserScript) ne s’appliquent qu’avant que le document HTML commence à se charger.
+WKUserScript utilise le paramètre injectionTime: .atDocumentStart.
+
+Cela signifie que le JavaScript d’injection (ex. : override fetch, XMLHttpRequest) est injecté juste avant que la page commence à s’exécuter.
+
+Si tu charges l'URL avant d’injecter le script, il est trop tard : les appels réseau de la SPA sont déjà lancés sans le header Authorization.
+
+2. Créer la WKWebView avec la bonne configuration au départ
+Le token est injecté dans la configuration de la WKWebView (via WKUserContentController).
+
+Une fois la WKWebView initialisée, tu ne peux pas modifier sa configuration après coup.
+
+Donc tu dois :
+a. Créer la configuration avec le token injecté
+b. Créer la WKWebView avec cette config
+c. Puis seulement appeler webView.load(...)
+
+En résumé :
+// 1. Crée la webview avec config personnalisée
+let webView = makeWebView(withAccessToken: token)
+
+// 2. Charge la SPA (après l'injection du script)
+webView.load(URLRequest(url: URL(string: "https://app.mondomain.fr")!))
