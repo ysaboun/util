@@ -1,0 +1,73 @@
+
+
+## **Solution recommandée (100% Swift) :**
+
+### **1. Récupère le token OAuth2 côté Swift**
+
+Tu utilises `ASWebAuthenticationSession` ou un autre mécanisme pour obtenir ton `access_token`.
+
+---
+
+### **2. Injecte dynamiquement le token dans tous les appels `fetch` et `XMLHttpRequest` de la SPA**
+
+```swift
+func makeWebView(withAccessToken token: String) -> WKWebView {
+    let contentController = WKUserContentController()
+
+    let scriptSource = """
+    (function() {
+        const accessToken = '\(token)';
+
+        const originalFetch = window.fetch;
+        window.fetch = function(input, init = {}) {
+            init.headers = init.headers || {};
+            if (typeof input === 'string' && input.startsWith('https://api-staging.mondomain.fr/')) {
+                init.headers['Authorization'] = 'Bearer ' + accessToken;
+            } else if (input.url && input.url.startsWith('https://api-staging.mondomain.fr/')) {
+                init.headers['Authorization'] = 'Bearer ' + accessToken;
+            }
+            return originalFetch(input, init);
+        };
+
+        const open = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function(method, url) {
+            this.addEventListener('readystatechange', function() {
+                if (this.readyState === 1 && url.startsWith('https://api-staging.mondomain.fr/')) {
+                    this.setRequestHeader('Authorization', 'Bearer ' + accessToken);
+                }
+            });
+            open.apply(this, arguments);
+        };
+    })();
+    """
+
+    let userScript = WKUserScript(source: scriptSource, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+    contentController.addUserScript(userScript)
+
+    let config = WKWebViewConfiguration()
+    config.userContentController = contentController
+
+    let webView = WKWebView(frame: .zero, configuration: config)
+    return webView
+}
+```
+
+---
+
+### **3. Utilisation**
+
+```swift
+let token = "eyJhbGciOiJSUzI1NiIsInR5cCI..." // récupéré via OAuth2 (Ping)
+let webView = makeWebView(withAccessToken: token)
+webView.load(URLRequest(url: URL(string: "https://app.mondomain.fr/")!))
+```
+
+---
+
+### **Résultat :**
+
+* Tous les appels vers `https://api-staging.mondomain.fr/**` reçoivent automatiquement le header :
+
+  ```
+  Authorization: Bearer <access_token>
+  ```
