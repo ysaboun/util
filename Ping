@@ -1,7 +1,0 @@
-**PingOne Fraud** et **PingOne Risk** sont deux solutions complémentaires de **Ping Identity** visant à renforcer la sécurité des accès en analysant les risques et en détectant les comportements frauduleux en temps réel.  
-
-**PingOne Risk** évalue le niveau de risque associé à une tentative d’authentification ou d’accès en se basant sur plusieurs signaux, tels que l’adresse IP, la localisation, l’appareil utilisé et les habitudes de connexion de l’utilisateur. Il attribue un **score de risque** qui permet d’adapter la réponse de sécurité : accès autorisé, challenge MFA via **PingOne MFA**, ou blocage.  
-
-**PingOne Fraud**, quant à lui, va plus loin en intégrant des capacités avancées de **détection de fraude basée sur l’IA**. Il analyse les comportements anormaux, détecte les **attaques automatisées (bots, credential stuffing)** et identifie les tentatives de prise de contrôle de compte (**ATO – Account Takeover**). En combinant les analyses comportementales et les modèles prédictifs, PingOne Fraud permet de bloquer les menaces avant qu'elles ne compromettent les comptes utilisateurs.  
-
-Ensemble, ces solutions permettent d'implémenter une **authentification adaptative**, où le niveau de sécurité s’ajuste dynamiquement en fonction du risque détecté, garantissant ainsi une expérience utilisateur fluide tout en renforçant la protection contre les menaces.
