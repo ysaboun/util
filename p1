@@ -1,0 +1,41 @@
+Utilise un `WKUserScript` pour injecter un script JavaScript qui override `fetch` et `XMLHttpRequest` pour qu’ils incluent le token dans le header `Authorization`.
+
+func makeWebView(withToken token: String) -> WKWebView {
+    let contentController = WKUserContentController()
+
+    let tokenInjectionScript = """
+    (function() {
+        const token = '\(token)';
+        
+        const originalFetch = window.fetch;
+        window.fetch = function(input, init) {
+            init = init || {};
+            init.headers = init.headers || {};
+            init.headers['Authorization'] = 'Bearer ' + token;
+            return originalFetch(input, init);
+        };
+
+        const originalOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+            this.addEventListener('readystatechange', function() {
+                if (this.readyState === 1) {
+                    this.setRequestHeader('Authorization', 'Bearer ' + token);
+                }
+            }, false);
+            originalOpen.call(this, method, url, async, user, password);
+        };
+    })();
+    """
+
+    let userScript = WKUserScript(source: tokenInjectionScript, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+    contentController.addUserScript(userScript)
+
+    let config = WKWebViewConfiguration()
+    config.userContentController = contentController
+
+    return WKWebView(frame: .zero, configuration: config)
+}
+
+let webView = makeWebView(withToken: accessToken)
+webView.navigationDelegate = self
+webView.load(URLRequest(url: URL(string: "https://tonspa.example.com")!))
