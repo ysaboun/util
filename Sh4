@@ -1,0 +1,64 @@
+#!/bin/bash
+
+DOMAIN="sample-angular.dev"
+PORT=4200
+SSL_DIR="./ssl"
+CRT="$SSL_DIR/localhost.crt"
+KEY="$SSL_DIR/localhost.key"
+
+function info() {
+  echo -e "\033[1;34m[INFO]\033[0m $1"
+}
+
+function warn() {
+  echo -e "\033[1;33m[WARN]\033[0m $1"
+}
+
+function error() {
+  echo -e "\033[1;31m[ERROR]\033[0m $1"
+  exit 1
+}
+
+command -v node >/dev/null 2>&1 || error "Node.js n'est pas installé."
+command -v npm >/dev/null 2>&1 || error "npm n'est pas installé."
+command -v openssl >/dev/null 2>&1 || error "openssl n'est pas installé."
+
+# Installer Vite s'il n'est pas installé
+if ! command -v vite >/dev/null 2>&1; then
+  warn "'vite' n'est pas installé globalement. Installation locale..."
+  npm install vite --save-dev || error "Échec de l'installation de vite."
+fi
+
+# Génération du certificat SSL si nécessaire
+if [ ! -f "$CRT" ] || [ ! -f "$KEY" ]; then
+  info "Génération du certificat SSL..."
+  mkdir -p "$SSL_DIR"
+  openssl req -x509 -out "$CRT" -keyout "$KEY" \
+    -newkey rsa:2048 -nodes -sha256 \
+    -subj "/CN=$DOMAIN" -extensions EXT -config <( \
+      printf "[dn]\nCN=$DOMAIN\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:$DOMAIN\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth") \
+    || error "Erreur de génération du certificat."
+else
+  info "Certificat SSL déjà présent."
+fi
+
+# Vérifie /etc/hosts
+if ! grep -q "$DOMAIN" /etc/hosts; then
+  warn "L'entrée $DOMAIN n'est pas dans /etc/hosts."
+  read -p "Ajouter $DOMAIN dans /etc/hosts ? (sudo requis) [y/N]: " ADD_HOSTS
+  if [[ "$ADD_HOSTS" =~ ^[Yy]$ ]]; then
+    echo "127.0.0.1 $DOMAIN" | sudo tee -a /etc/hosts > /dev/null \
+      && info "$DOMAIN ajouté à /etc/hosts." \
+      || warn "Impossible d’ajouter à /etc/hosts."
+  else
+    warn "Ajoute manuellement : 127.0.0.1 $DOMAIN"
+  fi
+fi
+
+# Installer les dépendances
+info "Installation des dépendances npm..."
+npm install || error "Échec de npm install."
+
+# Lancer Vite avec la config SSL et domaine
+info "Démarrage du serveur Vite sur https://$DOMAIN:$PORT"
+npx vite
