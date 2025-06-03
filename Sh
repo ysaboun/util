@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# 1. Vérifier si node est installé
+if ! command -v node &> /dev/null; then
+    echo "Node.js n'est pas installé. Veuillez l'installer d'abord."
+    exit 1
+fi
+
+# 2. Installer les dépendances
+echo "Installation des dépendances..."
+npm install
+
+# 3. Builder l'application
+echo "Construction de l'application React..."
+npm run build
+
+# 4. Installer serve si non présent (utilisé pour servir la build)
+if ! command -v serve &> /dev/null; then
+    echo "Installation de 'serve' pour héberger la build localement..."
+    npm install -g serve
+fi
+
+# 5. Lancer l'application en mode production
+echo "Démarrage de l'application sur http://localhost:5000"
+serve -s build
