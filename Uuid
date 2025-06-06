@@ -1,0 +1,75 @@
+Bien sûr ! Voici plusieurs **autres manières** de créer une table PostgreSQL avec un champ UUID pour `compteid`, tout en variant la **façon de générer ou gérer le UUID** :
+
+---
+
+### ✅ **1. Avec `uuid_generate_v4()` (standard et recommandé)**
+
+```sql
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TABLE comptes (
+    compteid UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nom TEXT NOT NULL,
+    prenom TEXT NOT NULL
+);
+```
+
+---
+
+### ✅ **2. Avec `gen_random_uuid()` (via l’extension `pgcrypto`)**
+
+Plus moderne, performante, sans dépendance externe :
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TABLE comptes (
+    compteid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nom TEXT NOT NULL,
+    prenom TEXT NOT NULL
+);
+```
+
+---
+
+### ✅ **3. UUID géré depuis l’application (Java, Python, etc.)**
+
+On laisse le backend générer le UUID (ex: `UUID.randomUUID()` en Java) et on insère depuis le code :
+
+```sql
+CREATE TABLE comptes (
+    compteid UUID PRIMARY KEY,
+    nom TEXT NOT NULL,
+    prenom TEXT NOT NULL
+);
+```
+
+> Dans ce cas, il n'y a pas de valeur par défaut dans la table. C'est l'application qui génère et fournit le `compteid`.
+
+---
+
+### ✅ **4. Table avec `SERIAL` ou `BIGSERIAL` + UUID unique non PK**
+
+Si tu veux un ID auto-incrémenté (interne) *et* un UUID unique :
+
+```sql
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TABLE comptes (
+    id SERIAL PRIMARY KEY,
+    compteid UUID UNIQUE NOT NULL DEFAULT uuid_generate_v4(),
+    nom TEXT NOT NULL,
+    prenom TEXT NOT NULL
+);
+```
+
+---
+
+### Résumé des extensions UUID PostgreSQL :
+
+| Extension   | Fonction             | Remarque                                |
+| ----------- | -------------------- | --------------------------------------- |
+| `uuid-ossp` | `uuid_generate_v4()` | Classique, souvent utilisée             |
+| `pgcrypto`  | `gen_random_uuid()`  | Moderne, recommandée par PostgreSQL 13+ |
+
+Souhaites-tu une version avec contraintes supplémentaires (unicité sur nom/prénom, index, timestamps, etc.) ?
