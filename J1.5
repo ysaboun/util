@@ -1,0 +1,134 @@
+Voici une explication complète mais claire du **Pattern Outbox**, adaptée à ton rôle d’**architecte solution**, avec schéma, cas d’usage, exemple technique, et points de vigilance.
+
+---
+
+## 📦 **Pattern Outbox**
+
+### 📖 Définition
+
+> Le **pattern Outbox** permet de garantir la **fiabilité des échanges asynchrones** (ex. publication d’événements Kafka) lorsqu'une **opération métier** doit être **atomique avec l'envoi d’un message**.
+
+Il répond à la **problématique du double commit** :
+✅ écriture en base de données métier
+✅ envoi d’un message dans une plateforme événementielle (Kafka, RabbitMQ, etc.)
+
+---
+
+## 🧩 **Problème à résoudre**
+
+### ❌ Cas sans Outbox :
+
+```text
+1. Service traite un paiement → DB OK
+2. Puis tente d’envoyer événement Kafka → Échec
+Résultat : la base est mise à jour, mais aucun autre service n’est informé.
+```
+
+### 🎯 Objectif du pattern :
+
+> Garantir qu’un **événement métier** est publié **exactement une fois** dès lors que la **transaction locale est validée**.
+
+---
+
+## 🏗️ **Architecture du Pattern**
+
+```text
+Application Service
+   |
+   |-- (1) Écrit dans la DB métier
+   |-- (2) Écrit un message dans une table "outbox" (dans la même transaction)
+   |
+CDC / Poller / Worker
+   |
+   |-- (3) Lit la table outbox
+   |-- (4) Publie dans Kafka / RabbitMQ
+   |-- (5) Marque le message comme traité
+```
+
+✅ Fiable
+✅ Transactionnel
+✅ Pas besoin de XA ou 2PC
+
+---
+
+## 💼 **Cas d’usage typique**
+
+* Microservice `CommandeService`
+
+  * Enregistre la commande en base
+  * Écrit dans la table `outbox_event` : `{"type":"CommandeCréée", "commandeId":123}`
+  * Un worker ou Debezium lit et publie vers Kafka
+
+---
+
+## 💻 **Exemple technique – Spring Boot + PostgreSQL + Kafka**
+
+### 1. Transaction métier + insertion dans table outbox
+
+```java
+@Transactional
+public void traiterCommande(Commande commande) {
+    commandeRepository.save(commande);
+
+    OutboxEvent event = new OutboxEvent("CommandeCréée", commande.getId(), ...);
+    outboxRepository.save(event);
+}
+```
+
+### 2. Worker périodique (ou Kafka Connect + Debezium)
+
+```java
+@Scheduled(fixedDelay = 1000)
+public void publierEvenements() {
+    List<OutboxEvent> events = outboxRepository.findNonPublies();
+
+    for (OutboxEvent event : events) {
+        kafkaTemplate.send("commande.topic", event.toKafkaRecord());
+        event.marquerCommePublié();
+    }
+    outboxRepository.saveAll(events);
+}
+```
+
+---
+
+## 🧠 **Pourquoi ça marche**
+
+* ✅ L'insertion dans la table outbox se fait **dans la même transaction** que l'action métier.
+* ✅ Le worker fonctionne **de façon indépendante** et **résiliente aux pannes**.
+* ✅ Aucun risque d’incohérence entre la DB métier et Kafka.
+
+---
+
+## 🧱 Représentation ArchiMate (simplifiée)
+
+```text
+Application Component : ServiceCommande
+⬇
+Application Function : EnregistrerCommande
+⬇
+Data Object : Commande
+⬇
+Data Object : OutboxEvent
+⬇
+Technology Service : CDC Kafka Connect ou Worker
+⬇
+Application Event : CommandeCréée
+⬇
+Application Component : Kafka
+```
+
+---
+
+## ⚠️ **Points de vigilance**
+
+| Risque / difficulté          | Solution                                                    |
+| ---------------------------- | ----------------------------------------------------------- |
+| Nettoyage de la table outbox | TTL ou archivage post-publication                           |
+| Ordre des événements         | Utiliser les timestamps ou offset contrôlé                  |
+| Événements dupliqués         | Gérer l’idempotence côté consommateurs                      |
+| Volume élevé                 | Utiliser une table partitionnée ou Kafka Connect + Debezium |
+
+---
+
+Souhaites-tu que je t’envoie un **projet Spring Boot complet** avec ce pattern intégré (avec Kafka ou en simulé avec logs) ?
