@@ -1,0 +1,100 @@
+Voici une explication claire et illustrée du **pattern Strangler Fig**, adaptée à une mission d’**architecte solution**.
+
+---
+
+## 🌿 **Strangler Fig Pattern**
+
+### 📖 Définition
+
+> Le **Strangler Fig** est un **pattern de migration progressive** d’un système existant (souvent monolithique) vers une architecture moderne (microservices, APIs), **sans Big Bang**.
+
+Le nom vient de la **figue étrangleuse** : un arbre qui pousse autour d’un autre et le **remplace petit à petit**, jusqu’à ce que l’ancien disparaisse.
+
+---
+
+## 🔁 **Objectif principal**
+
+* **Réduire les risques** d’une refonte totale.
+* **Encapsuler le monolithe**, puis le **remplacer morceau par morceau**.
+* Permettre une **coexistence temporaire** entre ancien et nouveau.
+
+---
+
+## 🧱 **Architecture type du pattern**
+
+```text
+           +-----------------------------+
+           |        API Gateway          |
+           +-----------------------------+
+                     |
+        +------------+------------+
+        |                         |
++----------------+      +------------------------+
+|   Legacy App   |      |  Nouveau service/API   |
+| (Monolithe)    |      | (ex : microservice)    |
++----------------+      +------------------------+
+```
+
+* **API Gateway** ou **Proxy inversé** intercepte tous les appels.
+* Pour les fonctionnalités migrées, il route vers le **nouveau code**.
+* Pour les fonctionnalités restantes, il route encore vers le **monolithe**.
+
+---
+
+## 🔍 **Étapes concrètes**
+
+1. **Encapsuler** le monolithe derrière une façade (API Gateway ou proxy).
+2. **Extraire** un premier domaine métier → exposer une nouvelle API.
+3. **Rediriger** les appels liés à ce domaine vers le nouveau service.
+4. **Répéter** pour les autres fonctionnalités.
+5. **Supprimer** progressivement le code inutilisé du monolithe.
+
+---
+
+## 🧠 **Exemple concret (cas entreprise)**
+
+🎯 Cas : Migration d’un site e-commerce (monolithe Java) vers des microservices.
+
+| Domaine            | Migration                                   |
+| ------------------ | ------------------------------------------- |
+| Authentification   | REST API (Spring Boot + Keycloak) – ✅ migré |
+| Catalogue produits | encore dans le monolithe                    |
+| Commandes          | microservice dédié – en cours               |
+| Paiement           | REST API externe (Stripe) – déjà routé      |
+
+---
+
+## ✅ **Avantages**
+
+* Migration **par étapes** (moins risquée)
+* Possibilité de **tester en production** (canary releases, A/B)
+* Permet de **réutiliser les tests existants**
+* Améliore la **compréhension métier** au fil de la migration
+
+---
+
+## ⚠️ **Points de vigilance**
+
+* Attention à la **duplication temporaire** de logique.
+* Gérer la **cohérence des données** (entre monolithe et nouveaux services).
+* Avoir un **plan clair de découpage fonctionnel**.
+
+---
+
+## 📎 ArchiMate (représentation simplifiée)
+
+```text
+Application Component : MonolitheLegacy
+⬇             ⬇
+Application Interface : API Legacy       ← (encapsulé)
+⬇
+Application Component : API Gateway
+⬇
+Application Interface : API V1/V2 (REST)
+⬇
+Application Component : MicroserviceCommande
+```
+
+---
+
+Souhaites-tu un **exemple Spring Boot** avec API Gateway (via Spring Cloud Gateway ou NGINX) pour démontrer ce pattern en local ?
