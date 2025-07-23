@@ -1,0 +1,64 @@
+Voici un **résumé synthétique de votre note d’étonnement au format ArchiMate**, en intégrant les concepts clés liés à l’architecture d’entreprise :
+
+---
+
+## 🧭 **Résumé – Note d’étonnement (Jour 1)**
+
+**Rôle : Architecte Solution**
+**Modélisation : Vue ArchiMate – niveau logique & applicatif**
+
+---
+
+### 📐 **1. Composants Applicatifs (Application Component)**
+
+| Composant           | Description                                    | Points d’attention                                       |
+| ------------------- | ---------------------------------------------- | -------------------------------------------------------- |
+| Monolithe Legacy    | Application métier existante                   | Ciblée par une migration API via pattern *Strangler Fig* |
+| API Gateway / Proxy | Composant de découplage et routage             | À positionner pour la transition API                     |
+| BPMN Engine         | Moteur d’orchestration (Camunda / Bonita ?)    | Doit déclencher des événements vers plateforme EDA       |
+| Event Platform      | Kafka / NATS / autre                           | Vérifier résilience, idempotence, métadonnées            |
+| Consumer App        | Services backend abonnés aux événements        | Gestion d’idempotence à sécuriser                        |
+| Data Platform       | Composant de gouvernance / stockage analytique | Coordination attendue avec Event Platform                |
+
+---
+
+### 🔁 **2. Flows Applicatifs (Application Flow / Communication)**
+
+* **REST Sync Flow**
+  Front Web → API Gateway → BPMN Engine
+  🔎 À combiner avec événements pour assurer la traçabilité
+
+* **Event Flow (EDA)**
+  BPMN → Platform Event → Consumers
+  🔎 Vérification du mapping des processus vers événements
+
+* **DB ↔ Event Flow (Outbox Pattern)**
+  DB locale → Outbox Table → CDC/Connect → Event Platform
+  🔎 Pattern à documenter (polling ou Debezium ?)
+
+---
+
+### 🧩 **3. Concepts techniques clés (Technology/Implementation)**
+
+| Concept               | Élément ArchiMate           | Priorité                                    |
+| --------------------- | --------------------------- | ------------------------------------------- |
+| Idempotence           | Business Rule / Constraint  | ⚠️ À sécuriser côté consommateurs           |
+| Outbox Pattern        | Data Object + Flow          | 📌 À modéliser pour les producteurs         |
+| Hybrid Sync/Async     | Interaction Flow            | ✅ Approche mixte à documenter               |
+| Résilience / Retry    | Business Process + Service  | 🔁 Patterns à aligner (retry, CB, fallback) |
+| Metadata Governance   | Data Object / Contract      | 🧠 Nécessite gouvernance transverse         |
+| Strangler Fig Pattern | Application Service Mapping | 🌱 Transition progressive à planifier       |
+
+---
+
+### 📌 **4. Actions proposées (Plateaux ou ateliers à modéliser)**
+
+* 📊 Atelier "EDA & Idempotence"
+* 🧱 Atelier "Migration Monolith → API (Strangler)"
+* 🔄 Atelier "Synchronisation BPMN ↔ Events"
+* 📁 Modélisation "Dictionnaire des événements / métadonnées"
+* 📚 Gouvernance transverse entre équipes Event & Data
+
+---
+
+Souhaitez-vous une **vue ArchiMate visuelle** (format .drawio, .bpmn ou Archi) avec les composants et les flux illustrés ?
