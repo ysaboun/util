@@ -1,0 +1,113 @@
+Voici une **traduction synthétique de ton rapport d’étonnement – Jour 1** en **notation ArchiMate**, en mode texte, structurée selon les concepts standards (composants, flux, comportements). Ce modèle pourra être rapidement reproduit dans un outil comme **Archi** ou **Draw\.io ArchiMate template**.
+
+---
+
+## 🧱 Rapport d’étonnement – Jour 1 (version ArchiMate)
+
+### 📐 **Vue d’architecture logique – Couches Application / Technique / Motivation**
+
+---
+
+### 🔹 1. **Pattern idempotence – À vérifier en EDA**
+
+```text
+Application Component : ConsumerService
+⬇
+Application Function : ConsommerÉvénement
+⬇
+Constraint : Idempotence obligatoire
+⬇
+Data Object : ÉvénementMétier
+```
+
+📌 **Remarque :** Absence d’implémentation claire d’idempotence → risque en cas de redelivery Kafka.
+
+---
+
+### 🔹 2. **Pattern Outbox – À formaliser**
+
+```text
+Application Component : MicroserviceProducteur
+⬇
+Application Function : PublierÉvénement
+⬇
+Data Object : OutboxMessage (Data Object)
+⬇
+Technology Service : CDC / Kafka Connect (Event Publication)
+⬅
+Artifact : Table Outbox
+```
+
+📌 **Remarque :** À clarifier : mode polling vs CDC.
+
+---
+
+### 🔹 3. **Strangler Fig – Migration Monolithique vers API**
+
+```text
+Application Component : MonolitheLegacy
+⬇
+Application Service : FonctionMétier
+⬇
+Application Interface : API REST Gateway
+⬇
+Application Component : MicroserviceCible
+⬅
+Flow : Appels REST – Progressif
+```
+
+📌 **Remarque :** Transition progressive via fronting API.
+
+---
+
+### 🔹 4. **Orchestration Front → BPMN → Event Platform**
+
+```text
+Business Actor : UtilisateurWeb
+⬇
+Application Component : Front SPA
+⬇
+Application Function : SoumettreDemande
+⬇
+Application Component : BPMN Engine
+⬇
+Application Function : OrchestrerProcessus
+⬇
+Application Event : ProcessusComplété
+⬇
+Application Component : Event Platform (Kafka / autre)
+```
+
+📌 **Remarque :** Orchestration hybride à fiabiliser.
+
+---
+
+### 🔹 5. **Mode Hybride Sync/Async – Résilience**
+
+```text
+Application Interface : API REST (Sync)
+⬌
+Application Event : ÉvénementMétiers (Async)
+⬇
+Business Rule : Résilience – Retry / Circuit Breaker / Timeout
+⬇
+Technology Service : Observabilité + Monitoring
+```
+
+📌 **Remarque :** Design résilient pas encore unifié (fallbacks, retry, CB...).
+
+---
+
+### 🔹 6. **Métadonnées & Gouvernance**
+
+```text
+Data Object : MétadonnéesÉvénement
+⬇
+Requirement : Traçabilité / Versionning / RGPD
+⬇
+Business Role : Responsable Data Gouvernance
+⬇
+Technology Function : Schéma Registry + Catalogage
+```
+
+📌 **Remarque :** Nécessité d’une gouvernance inter-équipes Event/Data.
