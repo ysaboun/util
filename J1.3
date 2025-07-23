@@ -1,0 +1,85 @@
+Voici un **rapport d’étonnement – Jour 1** de votre mission en tant qu’**Architecte Solution**, structuré de manière claire pour un partage avec votre responsable ou équipe :
+
+---
+
+## 🗂 Rapport d’étonnement – Jour 1
+
+**Mission : Architecte Solution**
+**Date :** 22 juillet 2025
+**Auteur :** \[Votre prénom et nom]
+
+---
+
+### 🎯 Objectif du jour
+
+Prise de connaissance du contexte, des équipes, des flux métiers, et des premières briques d’architecture applicative et d'intégration.
+
+---
+
+### 🧐 Points d’étonnement / axes d’approfondissement
+
+1. **✔️ Idempotence dans les architectures orientées événements (EDA)**
+
+   * La gestion de l'idempotence n’est pas toujours formalisée.
+   * À vérifier : les consommateurs d’événements gèrent-ils les doublons en cas de rejouabilité ou redelivery Kafka/NATS ?
+   * Recommandation : définir un *messageId* unique et tracer son traitement dans la persistence cible (PostgreSQL/NoSQL/etc.).
+
+2. **📦 Pattern Outbox / Transactionnelle asynchrone**
+
+   * Pas encore identifié si le pattern **Outbox** est utilisé pour garantir l’atomicité entre DB locale et publication Kafka.
+   * Besoin d’un cadrage pour proposer :
+
+     * Outbox avec CDC Debezium (Kafka Connect)
+     * Outbox via polling applicatif
+   * À expliquer dans une cartographie EDA.
+
+3. **🏛 Migration monolithe vers APIs – Pattern *Strangler Fig***
+
+   * Le SI contient encore des portions monolithiques.
+   * Opportunité d'introduire le pattern *Strangler Fig* pour encapsuler progressivement via API Gateway / Proxy inversé / découplage progressif.
+   * À accompagner d’un plan d’exposition des APIs métier.
+
+4. **📡 Orchestration front web → BPMN → Event Platform**
+
+   * Cas observé : des interactions utilisateurs déclenchent des processus via BPMN (Camunda ? Bonita ? autre).
+   * Point de vigilance : vérifier si les événements déclenchés depuis BPMN sont bien propagés vers la plateforme d'événements.
+   * Proposition : formaliser cette chaîne dans une cartographie BPMN ↔ Events ↔ consommateurs.
+
+5. **🔁 Résilience en mode hybride (Sync vs Async)**
+
+   * Présence d’appels synchrones (REST) et asynchrones (Kafka).
+   * À documenter : stratégies de résilience :
+
+     * Timeouts / Retry / Circuit Breaker (ex : Resilience4j)
+     * Compensation (SAGA, BPMN)
+   * Question clé : où est gérée la vérité métier ? (source of truth)
+
+6. **🧠 Métadonnées événementielles & gouvernance des données**
+
+   * Besoin d’un cadre pour structurer les métadonnées des événements :
+
+     * Qui publie ? Pourquoi ? À quel moment ?
+     * Schéma Avro/JSON : versioning, compatibilité
+     * Tracking, corrélation, conformité (RGPD, traçabilité)
+   * Connexion nécessaire entre équipe Event Platform & Data Governance.
+
+---
+
+### 🛠 Prochaines actions proposées
+
+* Organiser un atelier de cadrage sur **les patterns EDA** et **l’outillage Kafka/NATS** utilisé (registry, retry, etc.).
+* Valider la stratégie de transition **monolithe → APIs** (priorisation, découpage, fronting).
+* Identifier les **flux critiques BPMN → Event** et les points de rupture potentiels.
+* Lancer une réflexion autour d’un **cadre de modélisation des événements** (sémantique, structure, gouvernance).
+
+---
+
+### 📌 Remarques générales
+
+* Très bon accueil de l’équipe, contexte fonctionnel riche.
+* Architecture en cours de modernisation avec de réels enjeux sur la **traçabilité, fiabilité des flux**, et **montée en maturité autour des événements**.
+* Belle opportunité de construire un cadre de référence unifié autour de l’**architecture événementielle**.
+
+---
+
+Souhaitez-vous que je le formalise en Word/PDF ou que je génère une version Markdown à déposer dans un wiki Confluence ou Git ?
