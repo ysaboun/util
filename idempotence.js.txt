@@ -1,0 +1,45 @@
+const { v5, v4 } = require('uuid');
+
+// Namespaces UUID v4 prédéfinis
+const UUID_NAMESPACES = {
+  ICM: 'b12083c5-6c26-4597-96f4-5fc56af08839',
+  COMPTE: '9b60b328-b2a3-45bd-847c-d402f73a55fc',
+  CLIENT: '0429461d-b4aa-475b-9163-899840d30760',
+};
+
+// Fonction pour générer un identifiant d'idempotence UUIDv5
+function generateIdempotenceId(namespace, ...values) {
+  const input = values.join('|').trim().toLowerCase();
+  return v5(input, namespace);
+}
+
+// Exemple de données
+const nom = 'SABOUN';
+const prenom = 'Youcef';
+const mobile = '+33775234694';
+const mail = 'ycf.sbn@gmail.com';
+
+// Générations d’UUIDs v5 pour chaque sous-domaine
+const idempotenceIcm = generateIdempotenceId(
+  UUID_NAMESPACES.ICM,
+  nom, prenom, mobile, mail
+);
+
+const idempotenceCompte = generateIdempotenceId(
+  UUID_NAMESPACES.COMPTE,
+  nom, prenom, mobile
+);
+
+const idempotenceClient = generateIdempotenceId(
+  UUID_NAMESPACES.CLIENT,
+  mail, mobile
+);
+
+// Génération d’un UUIDv4 classique
+const randomUUID = v4();
+
+// Affichage des résultats
+console.log('UUIDv5 ICM       :', idempotenceIcm);
+console.log('UUIDv5 Compte    :', idempotenceCompte);
+console.log('UUIDv5 Client    :', idempotenceClient);
+console.log('UUIDv4 (aléatoire):', randomUUID);
