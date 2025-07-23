@@ -1,0 +1,55 @@
+Le **pattern d’idempotence** (ou *idempotency pattern*) est **un principe fondamental en architecture logicielle**, surtout dans les **systèmes distribués** ou **intégrations via API ou messages**. Il permet de garantir qu’un traitement **produit toujours le même résultat**, **même s’il est exécuté plusieurs fois**.
+
+---
+
+## 🧩 1. **Définition simple**
+
+> **Une opération est idempotente** si son exécution plusieurs fois a **le même effet** qu’une seule exécution.
+
+---
+
+## 🧪 2. **Exemples concrets**
+
+### ❌ Sans idempotence :
+
+* Une API de paiement appelée **deux fois** → **double débit** 💸💸
+* Un envoi de mail exécuté deux fois → **mail en double** 📩📩
+
+### ✅ Avec idempotence :
+
+* Même si l’API ou le message est traité plusieurs fois :
+
+  * **Le client n’est débité qu’une seule fois**
+  * **Le mail est envoyé une seule fois**
+
+---
+
+## 🛠️ 3. **Comment l’implémenter (techniquement)**
+
+| Approche                                     | Détails                                                                                                                                   |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Idempotency Key**                          | L’appelant génère une **clé unique** (`idempotency-key`) qu’il envoie avec la requête. Le serveur garde une trace et ignore les doublons. |
+| **Contrôle de doublon côté base de données** | Exemple : une table `paiement` avec une contrainte `UNIQUE(transaction_id)` ou `UNIQUE(reference_client)`.                                |
+| **Stockage de l’état de traitement**         | Ex. : conserver l’état `PROCESSED`, `FAILED`, `IN_PROGRESS` pour un identifiant donné, et rejeter les re-traitements.                     |
+| **Hash ou checksum**                         | On peut stocker un **hash du message** déjà traité pour éviter de le traiter de nouveau.                                                  |
+
+---
+
+## 🧱 4. **Où l’utiliser ?**
+
+* ✅ API REST (notamment POST)
+* ✅ Kafka ou RabbitMQ (consommateurs de messages)
+* ✅ Batchs ou traitements asynchrones
+* ✅ Paiements en ligne, enregistrements de commande, souscriptions
+
+---
+
+## 🛡️ 5. **Bénéfices**
+
+* 🔁 **Sécurité des données** : éviter les doublons
+* 🧘 **Résilience** : les systèmes peuvent re-jouer les messages sans effets secondaires
+* 📉 **Réduction des erreurs** en cas de crash ou timeout
+
+---
+
+Souhaites-tu un **exemple Java/Spring Boot avec une API REST ou Kafka** pour illustrer ce pattern ?
