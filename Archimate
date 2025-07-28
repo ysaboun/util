@@ -1,0 +1,88 @@
+🧭 1. Motivation / Contexte stratégique
+
+Ces questions t'aident à remplir les zones `Driver`, `Requirement`, `Constraint`, `Principle` :
+
+Pourquoi ce projet existe-t-il ?
+Ex : pression réglementaire, optimisation des coûts, délai de traitement ?
+
+Quels sont les objectifs business ?
+  Réduction des délais, satisfaction client, conformité, automatisation ?
+
+Quelles sont les contraintes réglementaires, techniques ou internes ?
+(ex : LCB-FT, RGPD, contraintes legacy ?)
+
+Y a-t-il des principes ou règles d’architecture à respecter ?
+Urbanisation, API-first, cloud, sécurité ?
+
+Quels sont les enjeux ou risques associés au projet ?
+
+2. Parties prenantes (Stakeholders)
+
+Ces questions t’aident à identifier les rôles, acteurs, responsabilités :
+
+Qui sont les acteurs internes concernés ?
+Ex : métier, DSI, sécurité, MOA, direction juridique…
+
+Y a-t-il des utilisateurs finaux ? Quels sont leurs besoins ?
+Qui valide les décisions ? Qui peut bloquer ?
+
+3. Processus métier (Business Layer)
+
+Pour comprendre et modéliser la couche métier :
+Peux-tu décrire le processus métier cible (ou actuel) ?
+Étapes clés, séquence logique, conditions…
+Y a-t-il une segmentation par rôle ?
+Ex : client, conseiller, instructeur, décisionnaire ?
+
+Quelles sont les offres ou services proposés au client ?
+Ex : crédit-bail auto, équipement, leasing opérationnel ?
+
+Quels documents ou objets métier sont manipulés ?
+Dossier, contrat, devis, etc. ?
+
+4. Capacités et stratégie
+
+Pour modéliser la couche stratégie (Capability, Resource, Course of Action) :
+
+Quelles sont les capacités critiques à maîtriser ?
+Ex : évaluation de solvabilité, édition de contrat, gestion de relance ?
+
+Existe-t-il un plan ou une roadmap pour cette activité ?
+
+Quelles ressources (humaines, techniques, financières) sont nécessaires ?
+
+5. SI existant / Application Layer
+
+Même sans tout connaître, tu peux orienter les réponses :
+
+Quelles sont les applications actuellement utilisées dans ce processus ? GED, CRM, outils internes ?
+
+Les échanges sont-ils manuels, automatisés, via API ? Où sont stockées les données (Dossiers, clients, pièces) ?
+
+Quels sont les irritants ou limites de l’existant ?
+Frictions, redondances, lenteur, non traçabilité ?
+
+6. Indicateurs & performance
+
+Pour dimensionner la valeur métier ou les objectifs :
+
+Quels indicateurs de performance ou de suivi sont utilisés ?
+
+ Délai moyen de traitement, nombre de dossiers rejetés, taux de satisfaction ?
+Comment mesure-t-on la réussite ?
+
+Questions techniques si tu dois modéliser l’architecture applicative
+
+Y a-t-il une cartographie applicative existante ?
+
+Quelles technologies sont utilisées (API REST, batch, ESB, etc.) ?
+
+Existe-t-il un référentiel de données (modèle, dictionnaire) ?
+
+Y a-t-il des dépendances vers des SI tiers ?
+
+Outil pratique : Fiche d’entretien ou grille de cadrage
+
+Préparer les ateliers de recueil
+Structurer tes comptes-rendus
+Alimenter directement les vues ArchiMate (Motivation, Stratégie, Business…)
