@@ -1,0 +1,206 @@
+
+3. documentation confluence
+4. clean code + doc code
+
+>>> log ?
+
+les requete dite passthough apres authentification reussie ou simplement pas d'auth .
+toute les requete sont controlées par le filter, puis laisse passer
+en ajoutant un objet 'business request'.
+
+le DTO BusinessRequest permet de véhiculer les données aux méthodes web.
+il s'agit d'un générique T correspondant au body de la requete originale.
+
+Pour une bonne lisibilité les getter/setter ne sont pas listés.
+A noter que cette version PoC est susceptible d'evoluer selon les besoins.
+
+package com.bnppf.filter.model;
+
+import java.util.Map;
+
+/**
+* DTO to be used to dialog with business services.
+* @param <T> is the business request class type
+* @author y
+  */
+  public class BusinessRequest<T> extends AbstractApiRequest {
+  /**
+    * internal request id
+      */
+      private String requestId;
+
+
+    private String requestPath;
+    private String accessToken;
+
+    /**
+     * headers
+     */
+    private Map<String, String> headers;
+
+    /**
+     * request object depending on type
+     */
+    private T request;
+}
+
+le filtre effectue les fonctions :
+- validation de la requete
+- execution du handler de la requete.
+- construction d'un dto BusinessRequet à passer aux méthodes web
+- signature des réponse
+
+# validation de la requete
+est un processus complexe qui s'appuie sur ke fichier de config spring du filter filter.yml
+(voir l'annexe pour plus de détails)
+
+La description suivante ne s'applique pas aux requetes
+trusted qui sont soumises directement par des composants intranet.
+
+Le processus de la validation effectue les tâches suivantes:
+1. extraction de l'access token (jwt) à partir du header Authorization
+2. extraction du requet-id
+3. utilisation du tableau d'objets AuthorizedUri pour determiner le type de requete. Si un objet correpond, on l'utilise ensuite pour continuer la validation. L'objet contien:
+  - une regexp qui permet d'identifier la requete d'apres la structure de son path.
+  - la methode http qui doit corerspondre à la requete 
+  - le type de la requete 
+  - le contexte api qui est le contexte nécessaire pour identiifer l'api dans apim
+4. ontention de tous les headers de la requete
+5. verification que tous les headers requis sont presents
+6. verification de la signature http
+7. verification du digest
+8. decodage de l'id token (jwt) 
+9. construction d'un objet ValidateResponse contenant des infos de contexte pour la communication entre les diff
+10. éléments du filtre. Un objet ApiContext est créé et contient ttes les info relatives à la requete (body; headers; request-id; request-type; objet authorizedUri; uri de la requete; token),
+cet objet validate reponse est ensuite passé au handler de la requete
+
+
+# handler de requete
+
+le filtre à son initialisation construit une map dont la clé
+de chaque élément est le type de requete (cf annexe) et la valeur une interface fonctionnelle (cf java >= 8 Function) qui pointe sur une méthode dans la classe RequestHandler.
+
+Chaque méthode est appelée avec en paramètre une instance de classe RequetArguments qui n'est qu'un passe plat pour fournir les objets ServletRequet, ServletResponse et ValidateResponse.
+
+La méthode handler spécifique au type de requete s'execute et effectue une des deux actions:
+
+1) requete de type passthrough qui doit faire executer une methode web:
+> construction DTO à fournir à la methode web à qui on va donner le controle(cas simple)
+> infomrmer le filter de laisser passer la requete
+> execution de la méthode web qui va:
+  >> executer le code métier
+  >> envoyer la reponse
+> filtrage de la reponse (signature du body)
+
+2) requete a execution différée
+> stocker la requete incluant l'objet apiContext
+> construction de la reponse
+> envoi de la reponse 
+
+Dans le cadre du PoC, certaine méthodes web ont été simulées.
+
+
+import com.bnppf.model.RequestResource;
+
+import java.util.Map;
+
+public class APisRequest {
+/**
+* request identifier to identify the request handler
+* more secure and less CPU consummer than introspection
+* Key type is used in filter to identify request types
+*
+*/
+
+    public enum REQUEST_TYPES{
+        ACCOUNTS_REQUEST("ACT", ApiNone.class),
+        EVENT_REQUEST("EVT", RequestResource.class);
+       private final String type;
+       private final Class<?> clazz;
+
+       REQUEST_TYPES(String type, Class<?> clazz){
+           this.type = type;
+           this.clazz = clazz;
+       }
+
+       public String type(){
+           return this.type;
+       }
+
+        public Class<?> getClazz() {
+            return clazz;
+        }
+
+        public static Class<?> getClassByType(String key) {
+            for (REQUEST_TYPES entry : REQUEST_TYPES.values()) {
+                if (entry.type.equals(key)) {
+                    return entry.getClazz();
+                }
+            }
+            throw new IllegalArgumentException("No class found for key: " + key);
+        }
+    }
+
+    /**
+     * request URI
+     */
+    private String requestUri;
+
+    /**
+     * request id
+     */
+    private String requestId;
+
+
+    /**
+     * request type
+     */
+    private String requestType;
+
+    private String body;
+
+    /**
+     * request headers list
+     */
+    private Map<String, String> headers;
+
+    /**
+     * access token
+     */
+    private String token;
+
+}
+
+Cet objet est le pivot entre le filter et les api.
+
+
+Le filtre des façades
+Le filtre (ou api-filter) joue un rôle primordial au niveau des façades.
+
+En effet il permet : 
+- de sécuriser les accès aux APIs et les applicatifs du backend, 
+- De collecter toutes les données nécessaires aux applicatifs backend.
+
+Principe de fonctionnement
+Le filtre est une implémentation du filtre de Tomcat ??. Il prend la main dès qu'une requête est envoyée par apim.
+Lors de l'implémentation du filtre par Tomcat??, la liste des path à filtrer est construite à partir du champ uriToFilter du fichier de configuration filter.yml. 
+
+Toute requête dont le path n'apparait pas dans le tableau uriFilter ne sera pas traitée par le filtre.
+
+Une requête entrante est traitée comme suit (en cas d'échec sur un des points, une erreur 400 ou 403 est retourée):
+1. Si la requête a un path correspondant à /trusted-* (requête interne de confiance) un objet générique BusinessRequest est créé avec le body fourni. Cet objet est positionné dans la tequête sous le nom d'attribut business-request et la requête est ensuite routée au backend. Ce type de requête est envoyée non pas par apim mais par le composant services lors des consentements par exemple ?. Si la requête n'est pas trustée, on passe à l'item suivant.
+2. L'access token est extrait du header authorization.
+3. Le device_id est extrait du certificat fourni par le RP Hades dans le header HTTP x-client-cert. Cet identifiant n'est pas réellement le client id du TPP puisqu'il est extrait de son QWAC et que le client id retourné au TPP lors de son enregistrement n'est pas indiqué dans la requête. S'il ne peut être extrait (absent par exemple) la requête est rejetée. 
+4. Le requestld devant être fourni par le TPP est extrait du header HTTP x-request-id. S'il ne peut être extrait (absent), la requête est rejetée.
+5. A partir de l'access token extrait au point 2 et du tpp/d extrait au point 3 le filtre requête le composant services pour obtenir un DTO TppAgentTokenResponse dans lequel il doit retrouver le client_id du TPP et l'entrée preta-cache de ce dernier. Si la réponse n'est pas correcte, la requête est rejetée.
+6. Si on vérifie, à partir du preta-cache retourné au point précédent que le TPP n'est pas blacklisté. 7. L'URI appelée est ensuite analysée et comparée aux entrée de la table authorized Uri du filter.yml. Si aucune entrée ne correspond la requête est rejetée.
+8. La présence du header HTTP de signature signature est vérifiée.
+9. La signature et le digest sont ensuite vérifiés.
+10. Si le header x-jwt-assertion existe, le JWT est extrait et décodé. On stocke l'information sub qui est le sujet du JWT, on créé éventuellement un objet ExtendedContext avec les informations du PSU et on s'assure de la validité du JWT.
+    A. le client_id du TPP doit correspondre au champ application présentée dans le JWT et positionnée par apim
+    B. le nom de host utilisé est comparé aux hosts autorisés dans la configuration filter.yml.
+11. Si un object Extended Context a été créé (présence d'informations sur le PSU), on vérifie que le couple TPP/PSU n'est pas graylisté.
+12. La main est ensuite transférée au module RequestHandler qui va personnaliser la requête à envoyer à la façade.
+13. L'ensemble des informations collectées permettent de construire un objet générique Dsp2Request. Si le sujet du JWT extrait au point 10 commence par PISP, on extrait le champ aspspRequestId (PISP seulement) que l'on positionne dans le Dsp2Request. Cette construction s'effectue selon le type de requête DSP2 appelée. Certaines actions peuvent être effectuées à ce niveau en requêtant le composant services.
+14. Un attribut dsp2-request est positionné dans la requête avec le l'objet Dsp2Request et la requête est enfin routée vers le backend.
+15. Le filter est effectue son action à savoir transmettre la requête à la route adéquate du backend.
