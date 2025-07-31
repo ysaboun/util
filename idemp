@@ -1,0 +1,77 @@
+Voici un **schéma de l'idempotence pattern** en **texte Markdown**, utile pour illustrer dans un document technique, un README ou une documentation d’architecture.
+
+---
+
+### 🧩 Schéma de l'idempotence (Markdown)
+
+````markdown
+# 🛡️ Idempotence Pattern
+
+Ce pattern garantit que plusieurs traitements du **même message** n'entraînent qu'un **effet unique**, évitant ainsi les doublons dans les systèmes distribués ou asynchrones.
+
+## 🔁 Cas d'usage
+
+- Rejeu de message (Kafka, RabbitMQ, etc.)
+- Appel d’API REST instable
+- Traitement batch relancé après erreur
+- Webhook reçu plusieurs fois
+
+---
+
+## 📊 Schéma (ASCII)
+
+                        ┌────────────┐
+                        │ Producteur │
+                        └─────┬──────┘
+                              │
+                       [Message avec ID]
+                              │
+                              ▼
+                    ┌────────────────────┐
+                    │ Consommateur / API │
+                    └─────────┬──────────┘
+                              │
+                 ┌────────────▼────────────┐
+                 │ Vérifier si ID déjà vu? │
+                 └────────────┬────────────┘
+                      Oui     │     Non
+                       │      ▼
+             ┌─────────┘   Traiter l'action
+             │                │
+       Ignorer / Log         ▼
+                        Sauvegarder ID
+                        Résultat final
+
+---
+
+## ✅ Bonnes pratiques
+
+- Stocker l'`idempotency-key` en base ou cache distribué (Redis, DB, etc.)
+- Expirer les clés après un TTL (ex: 24h) si besoin
+- Associer l'idempotency à :
+  - un `requestId`
+  - un `messageId` Kafka
+  - un `correlationId` HTTP
+
+---
+
+## 🛠️ Exemple REST
+
+```http
+POST /paiement
+Idempotency-Key: 12345-abcdef
+
+Body: {
+  "montant": 100,
+  "devise": "EUR"
+}
+````
+
+Serveur : si une requête avec la même clé a déjà été traitée, renvoyer **le même résultat** (HTTP 200) sans retravailler l’action.
+
+```
+
+---
+
+Souhaites-tu ce schéma en **version image** (avec flèches, couleurs, etc.) ou intégré dans un **document technique plus complet** ?
+```
