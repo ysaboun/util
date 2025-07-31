@@ -1,0 +1,56 @@
+Voici le schéma enrichi avec la **partie "Pipe / Filter"** en amont de la chaîne. Cela reflète l’architecture type où le contrôle d’accès s’effectue **le plus tôt possible**, avant même que la logique API ne soit exécutée :
+
+```
+         +----------------------------+
+         |         Client HTTP        |
+         +-------------+--------------+
+                       |
+                       v
+         +----------------------------+
+         | Pipe / Filter / Interceptor|  ◀── Extraction JWT, UserID, scopes
+         +-------------+--------------+
+                       |
+                       v
+         +----------------------------+
+         |        API façade          |
+         +-------------+--------------+
+                       |
+                       v
+         +----------------------------+
+         | AuthorizationService / PEP |  ◀── Policy Enforcement Point
+         +-------------+--------------+
+                       |
+                       v
+     +-----------------------------+
+     |  Engine / Règles métier     |  ◀── PDP : Policy Decision Point
+     |  - via code Java            |
+     |  - ou via policies (Rego, JSON…) |
+     +-----------------------------+
+                       |
+                       v
+             [Contextes, Ressources, Rôles]
+```
+
+---
+
+### 🔎 Détail des rôles
+
+* **Pipe / Filter / Interceptor** :
+
+  * Point de contrôle initial (security gate)
+  * Extrait l'identité du token JWT
+  * Peut faire appel au `AuthorizationService` directement pour bloquer ou laisser passer
+  * Applique aussi des contrôles transverses (ex : logs, traceId, rate limit…)
+
+* **AuthorizationService (PEP)** :
+
+  * Intermédiaire qui **demande une décision d’accès** à l’engine de règles.
+
+* **Engine (PDP)** :
+
+  * Implémente la logique métier d'habilitation (via du code ou des policies)
+  * Peut interroger une base ou du cache pour obtenir les habilitations de l'utilisateur
+
+---
+
+Souhaites-tu ce schéma en version **image graphique** ou un **exemple de code complet avec Filter + Service + Règles en Java** ?
