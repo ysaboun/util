@@ -1,0 +1,100 @@
+Voici un **schéma textuel en Markdown** décrivant **les étapes haut niveau de votre filtre POC (`PocFilter`)**. Ce schéma résume l’**architecture globale** et les **étapes principales** du traitement des requêtes HTTP dans votre filtre.
+
+---
+
+## 🛡️ Schéma haut niveau — `PocFilter` (Architecture fonctionnelle)
+
+```markdown
+graph TD
+  A[Entrée requête HTTP] --> B[Logging (FilterLogHandler.prepareLogging)]
+  B --> C[Validation requête (ApiRequestFilter.run)]
+
+  C -->|Requête "trusted" ou déjà validée| D[Bypass traitement — doContinue=true]
+
+  C -->|Requête à traiter| E[Handle Request (RequestHandler)]
+  E --> F[Update ValidateResponse.doContinue = true]
+
+  D --> G[Passage au reste du filtre - FilterChain.doFilter()]
+  F --> G
+
+  G --> H[Réponse HTTP interceptée (ContentCachingResponseWrapper)]
+  H --> I[Analyse et enrichissement de réponse (ResponseFilter.run)]
+
+  I -->|Succès| J[Réponse HTTP vers client]
+  I -->|Erreur| K[ResponseToClient.sendError()]
+
+  J --> L[Fin traitement — MDC.clear()]
+  K --> L
+```
+
+---
+
+## 🧩 Étapes détaillées (Vue développeur)
+
+1. **Initialisation du filtre (`PocFilter`)**
+
+   * `initFilterBean()` : mappe les `handlers` pour `request` et `response`.
+
+2. **Filtrage conditionnel (`shouldNotFilter`)**
+
+   * Évite d'intercepter les requêtes hors périmètre (`uriToFilter`).
+
+3. **Entrée dans `doFilterInternal`**
+
+   * Logging du `requestId` (`FilterLogHandler`).
+   * Exécution de `ApiRequestFilter.run()` :
+
+     * **Si URI "trusted"** → on bypass `handleRequest`, `doContinue=true`.
+     * Sinon, parsing et validation complète :
+
+       * Headers obligatoires (`requiredHeaders`)
+       * URI match (`authorizedUri`)
+       * Corps requis (pour POST/PUT)
+       * Type de requête (via `REQUEST_TYPES`)
+       * Construction de `ApiRequest`
+
+4. **Traitement métier de la requête**
+
+   * `RequestHandler.handleXRequest()` selon le type détecté (`ACCOUNTS_REQUEST`, `EVENT_REQUEST`)
+   * Enrichit la requête avec un `BusinessRequest`
+   * Marque `doContinue=true`
+
+5. **Transmission à la chaîne de filtres (`filterChain.doFilter`)**
+
+   * Utilise un `ContentCachingResponseWrapper` pour capturer la réponse.
+
+6. **Traitement de la réponse HTTP**
+
+   * `ResponseFilter.run()` :
+
+     * Capture `payload` de réponse
+     * Appelle le `ResponseHandler.handleXResponse()`
+     * Ajoute les headers de tracing (`x-request-id`, etc.)
+     * Gère l’audit log si non "trusted"
+
+7. **Envoi de la réponse**
+
+   * En cas d’erreur : `ResponseToClient.sendError()` renvoie une erreur enrichie.
+   * Sinon, copie de la réponse vers le client.
+
+8. **Nettoyage du contexte MDC**
+
+---
+
+## ⚙️ Composants clés
+
+| Composant             | Rôle                                                 |
+| --------------------- | ---------------------------------------------------- |
+| `PocFilter`           | Point d'entrée principal (`OncePerRequestFilter`)    |
+| `ApiRequestFilter`    | Valide la requête HTTP                               |
+| `RequestValidator`    | Vérifie URI, headers, méthode, corps, signature      |
+| `RequestHandler`      | Traite la requête métier (`Accounts`, `Event`, etc.) |
+| `ResponseFilter`      | Post-traitement de la réponse HTTP                   |
+| `ResponseHandler`     | Handler logique de réponse                           |
+| `ResponseToClient`    | Formatage et envoi de la réponse HTTP ou erreur      |
+| `FilterConfiguration` | Chargement des propriétés YAML de configuration      |
+| `FilterLogHandler`    | Logging MDC avec `requestId`                         |
+
+---
+
+Souhaitez-vous que je génère aussi une **version visuelle (image PNG/diagramme) du graphe ci-dessus** ou une **documentation structurée technique du filtre** ?
