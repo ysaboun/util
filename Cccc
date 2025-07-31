@@ -1,0 +1,113 @@
+Un **moteur de règles d’habilitation** (ou **moteur d'autorisation**) est un composant logiciel **chargé d’évaluer dynamiquement si un utilisateur est autorisé à effectuer une action sur une ressource**, selon des règles métier ou de sécurité.
+
+---
+
+## 🧠 Définition simple
+
+> C’est un **service ou module** qui répond à la question :
+>
+> **"Est-ce que l'utilisateur X a le droit de faire l'action Y sur la ressource Z dans ce contexte ?"**
+
+---
+
+## 🎯 Objectif
+
+* Appliquer le **contrôle d’accès à granularité fine (fine-grained access control)**
+* Centraliser la **logique d’habilitation** en un seul endroit (DRY principle)
+* Rendre les règles **lisibles, testables, évolutives**
+* Renforcer le **principe du moindre privilège**
+
+---
+
+## 🔍 Exemple concret
+
+```java
+authorizationService.canAccessClient(userId, clientId, Action.VIEW);
+```
+
+Ou en pseudo-code :
+
+```java
+IF user.role == "vendeur" AND client.storeId IN user.assignedStores
+    → ACCESS GRANTED
+ELSE
+    → ACCESS DENIED
+```
+
+---
+
+## 🧱 Architecture typique d’un moteur d’habilitation
+
+```
+         +----------------------------+
+         |        API façade          |
+         +-------------+--------------+
+                       |
+                       v
+         +----------------------------+
+         | AuthorizationService / PEP |
+         +-------------+--------------+
+                       |
+                       v
+     +-----------------------------+
+     |  Engine / Règles métier     |
+     |  - via code Java            |
+     |  - ou via policies (JSON, Rego...) |
+     +-----------------------------+
+                       |
+                       v
+             [Ressources, contextes, rôles]
+```
+
+---
+
+## 📦 Implémentation possible en Java
+
+### ✅ Avec un service maison :
+
+```java
+public class AuthorizationService {
+
+    public boolean canAccessStore(String userId, String storeId) {
+        // Appel base ou cache pour connaître les stores autorisés
+        List<String> authorizedStores = storeRepository.getStoresForUser(userId);
+        return authorizedStores.contains(storeId);
+    }
+}
+```
+
+---
+
+## 🧰 Alternatives open source / outillage
+
+| Outil / moteur                                  | Description                                    |
+| ----------------------------------------------- | ---------------------------------------------- |
+| **OPA (Open Policy Agent)**                     | Moteur open source, langage **Rego**, API REST |
+| **Keycloak Authorization Services**             | ABAC + scopes dynamiques                       |
+| **Apache Shiro / Spring Authorization Manager** | Règles en Java                                 |
+| **AuthZForce, Axiomatics (XACML)**              | Moteurs à base de standard XACML               |
+| **Cerbos**                                      | Moteur ABAC léger, YAML/JSON policies          |
+
+---
+
+## 🧠 Avantages du moteur d’habilitation
+
+✅ Centralisation des règles d’accès
+✅ Réutilisable par plusieurs services/API
+✅ Plus simple à tester et à auditer
+✅ Adapté aux règles complexes (rôles, périmètres, relations, temps, etc.)
+✅ Peut être **externalisé** (microservice de décision d’accès)
+
+---
+
+## 🔚 En résumé
+
+> Un **moteur de règles d’habilitation** est une brique critique pour :
+>
+> * Sécuriser l’accès aux ressources dans une API ou un SI
+> * Respecter les principes de sécurité : **moindre privilège**, **séparation des responsabilités**
+> * Appliquer des règles fines dynamiquement, de manière centralisée
+
+---
+
+Souhaites-tu que je t’en crée un exemple **minimal en Java**, ou une **intégration avec OPA** ?
