@@ -1,0 +1,2 @@
+Remarque : Les contrôles métier ne doivent pas être portés par le filter, qui reste un composant générique de sécurité relevant du socle technique commun.
+Ces responsabilités relèvent des couches fonctionnelles supérieures, notamment les API Facade ou les services métier, conformément au principe de séparation des responsabilités (Separation of Concerns).
