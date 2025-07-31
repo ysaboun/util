@@ -1,0 +1,101 @@
+Très bien, voici une **explication claire au niveau Architecte Solution**, accompagnée d’un **schéma textuel Markdown** décrivant le fonctionnement d’une **lib transverse Pipe & Filter**, intégrée dans des **microservices de façade**.
+
+---
+
+## 🎯 Objectif de la lib `pipe-filter-security-core`
+
+Créer une **librairie transverse** réutilisable dans les **produits Façade microservice** (APIs backend exposées derrière une Gateway), afin de **centraliser, structurer et homogénéiser les contrôles de sécurité et métiers**.
+
+---
+
+## 🧩 Vision architecturale – Niveau solution
+
+* Chaque **requête entrante** passe par une **chaîne de filtres configurables** : sécurité, validation, enrichissement, contrôle métier, etc.
+* Le **pipe** est construit dynamiquement ou statiquement (selon le produit).
+* La **lib** est intégrée en tant que **middleware transversal** dans les microservices de façade.
+* Le pattern garantit la **défense en profondeur**, la **revalidation locale** et le **découplage clair** entre sécurité et logique métier.
+
+---
+
+## 📌 Points clés
+
+* **Pass-through** assuré : si toutes les étapes passent, la requête accède à la logique métier.
+* Chaque **filtre est isolé, réutilisable, testable**.
+* Le **comportement est cohérent** d’un produit à l’autre.
+* La **chaîne est extensible** : on peut injecter dynamiquement des étapes selon le contexte.
+
+---
+
+## 📊 Schéma textuel en Markdown
+
+```markdown
+┌─────────────────────────────────────────────────────────────┐
+│                   ⬇️ Requête Entrante (HTTP, REST)           │
+│    [ JWT / AccessToken / Headers / Payload ]               │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+              ┌───────────────────────────────┐
+              │     Pipe & Filter Engine      │   ← intégré via lib
+              └───────────────────────────────┘
+                          │
+        ┌────────────────────────────────────────────┐
+        ▼                                            ▼
+[ Filter 1 : Validation Signature JWT ]          (rejette 401 si invalide)
+                          │
+        ▼
+[ Filter 2 : Claims & Scope Validation ]         (aud, exp, roles…)
+                          │
+        ▼
+[ Filter 3 : Contrôle d’autorisation métier ]    (ex : rôle = admin OU owner = true)
+                          │
+        ▼
+[ Filter 4 : Enrichissement Contexte ]           (userId, correlationId, orgUnit…)
+                          │
+        ▼
+[ Filter 5 : Validation Métier statique ]        (format, champs obligatoires, règles fixes)
+                          │
+        ▼
+[ Filter 6 : Journalisation / Audit ]            (avant appel métier)
+                          │
+        ▼
+             ✅ Passage autorisé
+                          │
+                          ▼
+           ┌────────────────────────────────┐
+           │     Service Métier / Façade    │
+           │ (appel interne, BDD, etc.)     │
+           └────────────────────────────────┘
+                          │
+                          ▼
+               🔁 Réponse HTTP (avec audit post-traitement)
+```
+
+---
+
+## 🧠 Comportement attendu
+
+* La lib gère le **rejet immédiat** si un filtre échoue (HTTP 401 / 403 / 422).
+* Elle supporte un **mode fail-safe** (fail closed par défaut).
+* Les filtres peuvent être configurés ou désactivés par produit (via config YAML ou injection Spring, etc.).
+
+---
+
+## ✅ Avantages du pattern dans ce contexte
+
+| Bénéfice                 | Détail                                                                         |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| 🔁 Réutilisabilité       | Chaque filtre est packagé et activable dans n'importe quel microservice façade |
+| 🧱 Défense en profondeur | Revalidation locale même si Gateway a déjà sécurisé                            |
+| 🧩 Modulaire             | Les étapes peuvent être ajoutées/supprimées sans impacter le métier            |
+| 📐 Homogénéité           | Tous les produits appliquent les mêmes standards de sécurité                   |
+| 📊 Observabilité         | Corrélation, logs, audit standardisés via le pipeline                          |
+
+---
+
+Souhaites-tu que je t’aide à définir :
+
+* le **design technique** de la lib (`@Component`, `interface Filter`, etc.) ?
+* ou un **template YAML de configuration** par microservice pour activer/désactiver les filtres ?
+
+Je peux aussi t'aider à rédiger la **page Confluence "Pattern Pipe & Filter Transverse – Sécurité Façade"** si tu veux en faire une référence d’équipe.
