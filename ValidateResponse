@@ -1,0 +1,5 @@
+public class ValidateResponse {
+    private ApiRequest apiRequest;
+    private boolean doContinue;
+    private AuthorizedUri uriDescription;
+}
