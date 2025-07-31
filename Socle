@@ -1,0 +1,28 @@
+Voici une **formulation concise et claire** sur la **motivation stratégique** d’une **API-filter (socle commun)** dans une architecture de façade :
+
+---
+
+### 🧩 **Pourquoi un socle commun API-Filter ?**
+
+Mettre en place un **socle commun transverse de filtres API** (pipe & filter) permet de **centraliser les aspects critiques transverses** tels que :
+
+* 🔐 **Sécurité** (authentification, autorisation, vérification des scopes)
+* 📜 **Traçabilité / Audit** (logs techniques et fonctionnels, traçabilité réglementaire)
+* 🛡️ **Protection** (anti-CSRF, IP filtering, rate-limiting, entête obligatoire)
+* 🧪 **Contrôle qualité** (validations, normalisation des erreurs, en-têtes requis)
+* 🧰 **Facilité de maintenance** : une **correction de faille de sécurité** ou un **changement de politique d’authentification** ne se fait qu’en un seul point
+* 📉 **Réduction des coûts** : moins de duplication, maintenance simplifiée, montée de version centralisée
+* 🔁 **Réutilisabilité** : même logique réutilisée dans toutes les API façades, que ce soit dans un contexte mobile, web ou partenaire
+
+---
+
+### 🎯 **Bénéfices concrets**
+
+* 🚀 Déploiement plus rapide de nouvelles APIs (le socle est prêt à l’emploi)
+* 🧬 Homogénéité des traitements (mêmes logs, mêmes contrôles, même structure d’erreurs)
+* 🕵️‍♂️ Meilleure observabilité et auditabilité
+* 🧑‍💻 Gain énorme en **effort de sécurisation, de mise en conformité et de gestion des vulnérabilités**
+
+---
+
+Souhaites-tu que je rédige cette motivation sous forme de bloc Confluence pour ton espace `Architecture / API Façade` ?
