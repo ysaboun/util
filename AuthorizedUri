@@ -1,0 +1,6 @@
+public class AuthorizedUri {
+    private String uriRegexp;
+    private String method;
+    private String type;
+    private String apiContext;
+}
