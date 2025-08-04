@@ -1,0 +1,20 @@
+   <dependency>
+            <groupId>com.bnppf.filter</groupId>
+            <artifactId>facade-filter-poc</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
+ @GetMapping(path= "/exp1")
+    public Collection<Account>  getExp1(@RequestAttribute("business-request") BusinessRequest<ApiNone> businessRequest) {
+        
+    }
+
+@PostMapping(path= "/exp2")
+    public String postExp2(@RequestAttribute("business-request") BusinessRequest<RequestResource> businessRequest) {
+       
+    }
+
+ @GetMapping("/trusted/hello")
+    ResponseEntity<?> getHello(){
+        return ResponseEntity.ok("hello trusted uri");
+    }
