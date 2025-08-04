@@ -1,0 +1,15 @@
+public class AbstractApiRequest {
+    private String requestType;
+
+    public AbstractApiRequest(){
+
+    }
+
+    public String getRequestType() {
+        return requestType;
+    }
+
+    public void setRequestType(String requestType) {
+        this.requestType = requestType;
+    }
+}
