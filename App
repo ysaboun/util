@@ -1,0 +1,54 @@
+### **Slide 1 – Application mobile vs Application Web (RIA/SPA responsive)**
+
+**App Mobile (native ou hybride)**
+
+* Expérience utilisateur fluide (ergonomie OS, biométrie, navigation rapide)
+* Notifications push natives → engagement client fort
+* Fonctionnalités avancées (caméra, GPS, stockage local, offline robuste)
+* Sécurité renforcée (MFA biométrique, SDK sécurité, device binding)
+* Présence sur stores (visibilité, crédibilité, mise à jour contrôlée)
+
+**App Web (RIA/SPA responsive)**
+
+* Accessible partout, sans installation ni store
+* Développement unique (moins coûteux, time-to-market rapide)
+* Mises à jour instantanées (sans dépendre des stores)
+* Limité en engagement (pas ou peu de push, pas d’icône native)
+* Fonctionnalités restreintes (pas d’accès complet aux capacités device)
+
+---
+
+### **Slide 2 – Évolution : RIA/SPA responsive → PWA**
+
+**Apports de la PWA**
+
+* Icône sur écran d’accueil (look & feel d’une app)
+* Mode offline via cache & service workers
+* Notifications push (surtout Android, iOS en progrès)
+* Performance accrue (chargements rapides, offline-first)
+* Un seul code base pour tous les devices
+
+**Limites**
+
+* Accès matériel restreint (biométrie, NFC, GPS background limités)
+* Sécurité limitée (pas de SDK mobile avancé)
+* Notifications iOS encore réduites
+* Moins de “poids marketing” qu’une app dans les stores
+
+---
+
+### **Slide 3 – PWA vs Application Mobile**
+
+**PWA**
+
+* Bon compromis coût / couverture / expérience
+* UX proche app, offline et push (selon device)
+* Déploiement rapide sans stores
+* Convient si objectif = accessibilité large + coûts maîtrisés
+
+**App Mobile**
+
+* Engagement fort (push, icône, stores)
+* Sécurité et intégration device maximales
+* Expérience premium et fidélisation
+* Convient si objectif = différenciation, sécurité, parcours client critiqu
