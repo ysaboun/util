@@ -1,0 +1,11 @@
+<div style="
+  margin:0;
+  padding:24px;
+  background-color:#1a102b;
+  color:#f0e6ff;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.6;
+  font-size:16px;
+">
+  <!-- ton contenu HTML et script JWT ici -->
+</div>
