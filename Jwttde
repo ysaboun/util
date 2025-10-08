@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Décodeur JWT — Exemple complet</title>
+  <style>
+    :root{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;}
+    body{background:#0f1724;color:#e6eef8;line-height:1.4;margin:0;padding:24px}
+    .card{background:#0b1220;border:1px solid #192133;padding:18px;border-radius:12px;max-width:980px;margin:0 auto}
+    textarea,input{width:100%;padding:10px;border-radius:8px;background:#071226;border:1px solid #20314a;color:#dfeeff}
+    button{background:#2563eb;border:none;padding:8px 12px;border-radius:8px;color:white;cursor:pointer}
+    pre{background:#071226;padding:12px;border-radius:8px;overflow:auto;border:1px solid #202940}
+    .row{display:flex;gap:12px}
+    .col{flex:1}
+    .muted{color:#9fb0d6;font-size:0.9rem}
+    .small{font-size:0.9rem}
+    .tag{background:#12233a;padding:6px 8px;border-radius:999px;font-size:0.85rem}
+    .status-ok{color:#4ade80}
+    .status-ko{color:#fb7185}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    .btn-ghost{background:transparent;border:1px solid #20314a;padding:8px 10px;border-radius:8px;color:#9fb0d6}
+    label{display:block;margin-bottom:6px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:800px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Décodeur JWT — Exemple complet</h1>
+    <p class="muted">Collez un JSON Web Token (JWT) ci-dessous. Ce petit outil montre l'en-tête (header), le corps (payload), la signature et permet de vérifier une signature HMAC (HS256) si vous fournissez la clé secrète.</p>
+
+    <label for="jwt">JWT</label>
+    <textarea id="jwt" rows="3" placeholder="Ex: eyJhbGciOiJI..." spellcheck="false"></textarea>
+
+    <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+      <div style="flex:1">
+        <label for="secret">Clé secrète (pour vérification HMAC-256) <span class="muted small">(optionnel)</span></label>
+        <input id="secret" placeholder="Entrer la clé secrète pour vérifier HS256" />
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="visibility:hidden">btn</label>
+        <div class="controls">
+          <button id="decodeBtn">Décoder</button>
+          <button id="verifyBtn" class="btn-ghost">Vérifier (HS256)</button>
+          <button id="clearBtn" class="btn-ghost">Effacer</button>
+        </div>
+      </div>
+    </div>
+
+    <hr style="margin:16px 0;border:none;border-top:1px solid #152033" />
+
+    <div class="grid">
+      <div>
+        <h3>En-tête (header)</h3>
+        <pre id="header">—</pre>
+      </div>
+      <div>
+        <h3>Corps (payload)</h3>
+        <pre id="payload">—</pre>
+      </div>
+    </div>
+
+    <h3 style="margin-top:12px">Signature</h3>
+    <pre id="signature">—</pre>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+      <div>
+        <span class="tag">Algorithme: <strong id="alg">—</strong></span>
+      </div>
+      <div>
+        <span id="verifyStatus" class="muted">Pas encore vérifié</span>
+      </div>
+    </div>
+
+    <hr style="margin:16px 0;border:none;border-top:1px solid #152033" />
+    <p class="muted small">Fonctionnalités : décodage Base64URL, formatage JSON, vérification HMAC-SHA256 via Web Crypto (côté client). Cet outil ne contacte aucun serveur — la vérification se fait localement dans votre navigateur.</p>
+  </div>
+
+<script>
+// Helpers : Base64URL -> Uint8Array -> string
+function b64UrlToUint8Array(b64url) {
+  // replace URL-safe chars
+  b64url = b64url.replace(/-/g, '+').replace(/_/g, '/');
+  // pad with =
+  while (b64url.length % 4) b64url += '=';
+  const binary = atob(b64url);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+function b64UrlToString(b64url) {
+  const bytes = b64UrlToUint8Array(b64url);
+  // decode UTF-8
+  const decoder = new TextDecoder();
+  return decoder.decode(bytes);
+}
+
+function toBase64Url(uint8) {
+  // uint8 can be Uint8Array
+  let binary = '';
+  for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+  let b64 = btoa(binary);
+  // to URL-safe
+  return b64.replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+function safeJsonParse(str) {
+  try { return JSON.parse(str); } catch (e) { return str; }
+}
+
+// UI references
+const jwtEl = document.getElementById('jwt');
+const headerEl = document.getElementById('header');
+const payloadEl = document.getElementById('payload');
+const signatureEl = document.getElementById('signature');
+const algEl = document.getElementById('alg');
+const statusEl = document.getElementById('verifyStatus');
+const secretEl = document.getElementById('secret');
+
+function pretty(obj) {
+  if (typeof obj === 'string') return obj;
+  try { return JSON.stringify(obj, null, 2); } catch (e) { return String(obj); }
+}
+
+function decodeJWT(token) {
+  const parts = token.trim().split('.');
+  if (parts.length !== 3) throw new Error('Format JWT invalide — 3 parties requises.');
+  const [h, p, s] = parts;
+  const headerRaw = b64UrlToString(h);
+  const payloadRaw = b64UrlToString(p);
+  const header = safeJsonParse(headerRaw);
+  const payload = safeJsonParse(payloadRaw);
+  return {headerRaw, payloadRaw, header, payload, signature: s, headerB64: h, payloadB64: p};
+}
+
+function setStatusOk(msg){ statusEl.textContent = msg; statusEl.className = 'status-ok'; }
+function setStatusKo(msg){ statusEl.textContent = msg; statusEl.className = 'status-ko'; }
+
+async function verifyHMAC256(token, secret) {
+  // compute HMAC-SHA256 over header.payload and compare with signature
+  const parts = token.trim().split('.');
+  if (parts.length !==3) throw new Error('JWT invalide');
+  const [h, p, s] = parts;
+  const data = new TextEncoder().encode(h + '.' + p);
+  const keyData = new TextEncoder().encode(secret);
+  // import key
+  const key = await crypto.subtle.importKey(
+    'raw', keyData, {name: 'HMAC', hash: {name: 'SHA-256'}}, false, ['sign']
+  );
+  const mac = await crypto.subtle.sign('HMAC', key, data); // ArrayBuffer
+  const macArr = new Uint8Array(mac);
+  const macB64Url = toBase64Url(macArr);
+  return macB64Url === s;
+}
+
+// Event handlers
+document.getElementById('decodeBtn').addEventListener('click', ()=>{
+  const token = jwtEl.value.trim();
+  if (!token) return alert('Collez un JWT dans la zone de texte.');
+  try {
+    const decoded = decodeJWT(token);
+    headerEl.textContent = pretty(decoded.header);
+    payloadEl.textContent = pretty(decoded.payload);
+    signatureEl.textContent = decoded.signature;
+    algEl.textContent = decoded.header.alg || '—';
+    statusEl.textContent = 'Pas encore vérifié'; statusEl.className = 'muted';
+  } catch (e) {
+    headerEl.textContent = '—'; payloadEl.textContent='—'; signatureEl.textContent='—'; algEl.textContent='—';
+    setStatusKo('Erreur: ' + e.message);
+  }
+});
+
+document.getElementById('verifyBtn').addEventListener('click', async ()=>{
+  const token = jwtEl.value.trim();
+  const secret = secretEl.value;
+  if (!token) return alert('Collez un JWT dans la zone de texte.');
+  if (!secret) return alert('Entrez la clé secrète pour vérifier HS256.');
+  try {
+    const decoded = decodeJWT(token);
+    if (!decoded.header.alg || !decoded.header.alg.startsWith('HS')) {
+      setStatusKo('Algorithme non HS (vérification HMAC impossible).');
+      return;
+    }
+    setStatusKo('Vérification en cours...');
+    const ok = await verifyHMAC256(token, secret);
+    if (ok) setStatusOk('Signature valide (HS256).');
+    else setStatusKo('Signature invalide.');
+  } catch (e) {
+    setStatusKo('Erreur: ' + e.message);
+  }
+});
+
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  jwtEl.value=''; secretEl.value=''; headerEl.textContent='—'; payloadEl.textContent='—'; signatureEl.textContent='—'; algEl.textContent='—'; statusEl.textContent='Pas encore vérifié'; statusEl.className='muted';
+});
+
+// optional: decode on paste/drop
+jwtEl.addEventListener('paste', ()=>{ setTimeout(()=>document.getElementById('decodeBtn').click(),50); });
+
+// small convenience: allow pressing Ctrl+Enter to decode
+jwtEl.addEventListener('keydown', (e)=>{ if ((e.ctrlKey||e.metaKey) && e.key==='Enter') document.getElementById('decodeBtn').click(); });
+</script>
+</body>
+</html>
