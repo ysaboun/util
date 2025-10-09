@@ -1,0 +1,103 @@
+<html>
+<div style="font-family:Inter,sans-serif; color:#222; padding:20px; max-width:900px; margin:auto;">
+
+  <h2 style="color:#7f00ff; text-align:center;">🔍 SAML Decoder Pro</h2>
+  <p style="text-align:center; color:#555;">Décodage SAMLRequest ou SAMLResponse (compressé ou non, Base64, URL-encoded)</p>
+
+  <textarea id="samlInput" placeholder="Collez votre SAML ici..." 
+    style="width:100%; height:120px; padding:10px; border:2px solid #7f00ff; border-radius:6px; font-family:monospace; font-size:14px; color:#333;"></textarea>
+
+  <div style="text-align:center; margin-top:10px;">
+    <button onclick="decodeSAML()" 
+      style="background:#7f00ff; color:white; border:none; border-radius:6px; padding:10px 25px; font-weight:bold; cursor:pointer;">Décoder 🔓</button>
+  </div>
+
+  <pre id="result" 
+    style="margin-top:20px; border-left:4px solid #7f00ff; padding:15px; border-radius:6px; overflow:auto; white-space:pre-wrap; font-family:monospace; font-size:14px;"></pre>
+
+  <div id="error" 
+    style="margin-top:10px; color:#c00; font-weight:bold; display:none;"></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+
+<script>
+function decodeSAML() {
+  const input = document.getElementById("samlInput").value.trim();
+  const result = document.getElementById("result");
+  const error = document.getElementById("error");
+  result.textContent = "";
+  error.style.display = "none";
+
+  if (!input) {
+    error.style.display = "block";
+    error.textContent = "⚠️ Veuillez coller une chaîne SAML.";
+    return;
+  }
+
+  try {
+    let str = input;
+
+    // URL decode
+    try { str = decodeURIComponent(str); } catch {}
+
+    // Retirer espaces, retours ligne
+    str = str.replace(/[\s\r\n]+/g, '');
+
+    // Base64 URL-safe → standard
+    str = str.replace(/-/g, '+').replace(/_/g, '/');
+
+    // Padding
+    while (str.length % 4) str += '=';
+
+    // Base64 → Uint8Array
+    const binary = atob(str);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+    let xml;
+    try {
+      // Essai DEFLATE (SAMLRequest compressé)
+      xml = pako.inflateRaw(bytes, { to: 'string' });
+    } catch {
+      // Non compressé
+      xml = new TextDecoder().decode(bytes);
+    }
+
+    // Supprimer toute couleur CSS
+    xml = xml.replace(/color:[^;"]+;?/g, "");
+
+    // Formater XML
+    result.textContent = formatXml(xml);
+
+  } catch (e) {
+    error.style.display = "block";
+    error.textContent = "❌ Erreur de décodage :\n\n" + e;
+  }
+}
+
+function formatXml(xml) {
+  const PADDING = "  ";
+  const reg = /(>)(<)(\/*)/g;
+  xml = xml.replace(reg, "$1\r\n$2$3");
+  let pad = 0;
+  return xml.split("\r\n").map((node) => {
+    let indent = "";
+    if (node.match(/.+<\/\w[^>]*>$/)) {
+      indent = PADDING.repeat(pad);
+    } else if (node.match(/^<\/\w/)) {
+      pad = Math.max(pad - 1, 0);
+      indent = PADDING.repeat(pad);
+    } else if (node.match(/^<\w[^>]*[^\/]>.*$/)) {
+      indent = PADDING.repeat(pad);
+      pad++;
+    } else {
+      indent = PADDING.repeat(pad);
+    }
+    return indent + node;
+  }).join("\r\n");
+}
+</script>
+
+</html>
