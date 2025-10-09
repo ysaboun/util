@@ -1,0 +1,65 @@
+<html>
+<div style="font-family:Inter,sans-serif; color:#222; padding:20px; max-width:900px; margin:auto;">
+
+  <h2 style="color:#7f00ff; text-align:center;">🔑 JWT Decoder</h2>
+  <p style="text-align:center; color:#555;">Décodage JWT (Header, Payload & Signature)</p>
+
+  <textarea id="jwtInput" placeholder="Collez votre JWT ici..." 
+    style="width:100%; height:120px; padding:10px; border:2px solid #7f00ff; border-radius:6px; font-family:monospace; font-size:14px; color:#333;"></textarea>
+
+  <div style="text-align:center; margin-top:10px;">
+    <button onclick="decodeJWT()" 
+      style="background:#7f00ff; color:white; border:none; border-radius:6px; padding:10px 25px; font-weight:bold; cursor:pointer;">Décoder 🔓</button>
+  </div>
+
+  <pre id="jwtResult" 
+    style="margin-top:20px; border-left:4px solid #7f00ff; padding:15px; border-radius:6px; overflow:auto; white-space:pre-wrap; font-family:monospace; font-size:14px;"></pre>
+
+  <div id="jwtError" 
+    style="margin-top:10px; color:#c00; font-weight:bold; display:none;"></div>
+
+</div>
+
+<script>
+function decodeJWT() {
+  const input = document.getElementById("jwtInput").value.trim();
+  const result = document.getElementById("jwtResult");
+  const error = document.getElementById("jwtError");
+  result.textContent = "";
+  error.style.display = "none";
+
+  if (!input) {
+    error.style.display = "block";
+    error.textContent = "⚠️ Veuillez coller un JWT.";
+    return;
+  }
+
+  try {
+    const parts = input.split('.');
+    if (parts.length !== 3) throw new Error("JWT invalide : doit contenir Header.Payload.Signature");
+
+    // Décodage Base64 URL-safe
+    const header = JSON.parse(atob(base64UrlDecode(parts[0])));
+    const payload = JSON.parse(atob(base64UrlDecode(parts[1])));
+    const signature = parts[2]; // signature brute
+
+    result.textContent =
+      "Header:\n" + JSON.stringify(header, null, 2) +
+      "\n\nPayload:\n" + JSON.stringify(payload, null, 2) +
+      "\n\nSignature:\n" + signature;
+
+  } catch (e) {
+    error.style.display = "block";
+    error.textContent = "❌ Erreur de décodage :\n\n" + e;
+  }
+}
+
+// Fonction Base64 URL-safe → standard
+function base64UrlDecode(str) {
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4) str += '=';
+  return str;
+}
+</script>
+
+</html>
