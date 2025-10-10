@@ -1,0 +1,82 @@
+Voici un **résumé clair et professionnel du pattern Saga** à placer dans une page Confluence, avec un petit schéma ASCII simple que tout lecteur comprendra (et qui s’affiche bien sans image).
+
+---
+
+## 🧩 **Pattern Saga – Gestion des transactions distribuées**
+
+### 🔍 Définition
+
+Le **pattern Saga** est un modèle architectural utilisé pour garantir la **cohérence des données dans les systèmes distribués** (microservices), sans recourir à une transaction globale (`2PC`).
+Une saga est composée d’une **suite de transactions locales**.
+Si l’une échoue, des **actions compensatoires** sont exécutées pour annuler les étapes précédentes.
+
+---
+
+### ⚙️ **Principe de fonctionnement**
+
+* Chaque **microservice** exécute une **transaction locale** (atomique et autonome).
+* Si une étape échoue, les **transactions précédentes sont compensées**.
+* Le flux global peut être géré selon deux modes :
+
+  * **Chorégraphie** : coordination distribuée via des événements.
+  * **Orchestration** : coordination centralisée par un orchestrateur.
+
+---
+
+### 🧭 **Modes de coordination**
+
+| Critère       | **Chorégraphie**                   | **Orchestration**                      |
+| :------------ | :--------------------------------- | :------------------------------------- |
+| Contrôle      | Distribué                          | Centralisé                             |
+| Communication | Événements asynchrones             | Appels directs (souvent synchrones)    |
+| Couplage      | Faible                             | Plus fort                              |
+| Traçabilité   | Complexe                           | Simple                                 |
+| Avantages     | Autonomie des services, extensible | Flux clair, piloté, facile à monitorer |
+| Inconvénients | Difficulté de suivi                | Risque de point unique de défaillance  |
+
+---
+
+### 🪶 **Schéma simplifié**
+
+#### 1. Mode *Chorégraphie*
+
+```
+[Service A] --(Événement 1)--> [Service B] --(Événement 2)--> [Service C]
+       ↑                                        |
+       |-----------(Événement d'échec)-----------|
+```
+
+#### 2. Mode *Orchestration*
+
+```
+            +---------------------+
+            |   Orchestrateur     |
+            +----------+----------+
+                       |
+     +-----------------+-----------------+
+     |                 |                 |
+[Service A]       [Service B]       [Service C]
+   | (succès)        | (échec)          |
+   +-------> Compensation déclenchée <---+
+```
+
+---
+
+### 💡 **Cas d’usage typiques**
+
+* Réservation de voyage (vol, hôtel, voiture).
+* Commande e-commerce (création, paiement, livraison).
+* Processus métiers multi-domaines nécessitant rollback partiel.
+
+---
+
+### 🧱 **Bonnes pratiques**
+
+* Utiliser un **trace ID** pour suivre les événements d’une saga.
+* Prévoir un **mécanisme d’outbox** pour fiabiliser la publication d’événements.
+* Implémenter des **actions compensatoires idempotentes** (sans effet secondaire multiple).
+* Surveiller la **durée et l’état des sagas** (monitoring, dashboards).
+
+---
+
+Souhaites-tu que je te prépare une version **Confluence prête à copier-coller** (avec mise en forme Confluence : titres, panneaux info, couleurs, etc.) ?
