@@ -1,0 +1,70 @@
+<div>
+  <div style="font-family:Arial, sans-serif; font-size:16px; font-weight:bold; color:#6a0dad; margin-bottom:10px;">
+    Boîte à outils — Sécurité & inspection de tokens
+  </div>
+
+  <div style="font-size:13px; color:#000; margin-bottom:10px;">
+    <strong>Avertissement :</strong> n’utilisez jamais de tokens de production ou des secrets réels dans des outils en ligne. Préférez des outils locaux (CLI ou extensions IDE) pour déboguer des données sensibles.
+  </div>
+
+  <table style="width:100%; border-collapse:collapse; font-size:13px;">
+    <thead>
+      <tr>
+        <th style="text-align:left; padding:6px 8px; color:#6a0dad;">Outil</th>
+        <th style="text-align:left; padding:6px 8px; color:#6a0dad;">Usage</th>
+        <th style="text-align:left; padding:6px 8px; color:#6a0dad;">Remarque</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding:6px 8px;"><a href="https://jwt.io" target="_blank" style="color:#6a0dad; text-decoration:none;">jwt.io</a></td>
+        <td style="padding:6px 8px;">Décodage rapide des JWT (header / payload)</td>
+        <td style="padding:6px 8px; color:#555;">Bon pour inspection, éviter tokens prod</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px;"><a href="https://www.samltool.com" target="_blank" style="color:#6a0dad; text-decoration:none;">SAMLTool</a></td>
+        <td style="padding:6px 8px;">Décoder et formater des assertions SAML encodées</td>
+        <td style="padding:6px 8px; color:#555;">Utile pour lire le XML SAML</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px;"><a href="https://oidcdebugger.com" target="_blank" style="color:#6a0dad; text-decoration:none;">OIDC / OAuth Debugger</a></td>
+        <td style="padding:6px 8px;">Simuler et inspecter des flux OAuth2 / OIDC</td>
+        <td style="padding:6px 8px; color:#555;">Tester redirect URIs et scopes</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px;"><a href="https://www.postman.com" target="_blank" style="color:#6a0dad; text-decoration:none;">Postman</a></td>
+        <td style="padding:6px 8px;">Tester APIs, examiner headers et tokens</td>
+        <td style="padding:6px 8px; color:#555;">Supporte collections et scripts</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px;"><a href="https://owasp.org/www-project-zap/" target="_blank" style="color:#6a0dad; text-decoration:none;">OWASP ZAP</a></td>
+        <td style="padding:6px 8px;">Scanner de vulnérabilités web</td>
+        <td style="padding:6px 8px; color:#555;">XSS, CSRF, injections</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px;"><a href="https://snyk.io" target="_blank" style="color:#6a0dad; text-decoration:none;">Snyk / Dependabot</a></td>
+        <td style="padding:6px 8px;">Scanner les dépendances pour vulnérabilités</td>
+        <td style="padding:6px 8px; color:#555;">Intégration CI recommandée</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px;"><a href="https://www.ssllabs.com/ssltest/" target="_blank" style="color:#6a0dad; text-decoration:none;">SSL Labs</a></td>
+        <td style="padding:6px 8px;">Audit TLS/SSL d’un domaine</td>
+        <td style="padding:6px 8px; color:#555;">Très utile avant prod publique</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px;">openssl / xmlsec1 (CLI)</td>
+        <td style="padding:6px 8px;">Inspecter signatures, décoder base64, manipuler certificats</td>
+        <td style="padding:6px 8px; color:#555;">Outils locaux, sûrs pour secrets</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px;"><a href="https://www.vaultproject.io" target="_blank" style="color:#6a0dad; text-decoration:none;">HashiCorp Vault</a></td>
+        <td style="padding:6px 8px;">Gestion centralisée des secrets (keystores, rotation, ACL)</td>
+        <td style="padding:6px 8px; color:#555;">Recommandé pour production</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:10px; font-size:12px; color:#555;">
+    Rappel : privilégier les outils locaux/CLI ou extensions IDE pour le debug de données sensibles.
+  </div>
+</div>
