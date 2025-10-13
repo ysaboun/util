@@ -1,0 +1,26 @@
+Voici une proposition simple de **schéma conceptuel** pour figurer la relation entre ArchiUnit et l’architecture hexagonale, sans entrer dans le détail technique :
+
+```
+           ┌───────────────────────────┐
+           │        ArchiUnit          │
+           │ (vérifie cohérence et     │
+           │  respect des principes)   │
+           └─────────────┬────────────┘
+                         │
+                         │ s’applique à
+                         ▼
+           ┌───────────────────────────┐
+           │ Architecture Hexagonale   │
+           │ - Cœur métier isolé       │
+           │ - Ports & Adapters        │
+           │ - Modularité & maintenabilité │
+           └───────────────────────────┘
+```
+
+**Explication à mettre sur Confluence :**
+
+* ArchiUnit agit comme un **gardien de la cohérence**, même lorsque le système évolue.
+* L’architecture hexagonale illustre comment les composants sont **organisés et isolés**, avec un cœur métier indépendant des dépendances externes.
+* Ensemble, ils permettent de **maintenir modularité, évolutivité et qualité** du système.
+
+Si tu veux, je peux te créer une **version graphique simple**, type diagramme avec des flèches et icônes, prêt à insérer sur Confluence, pour que ce soit plus visuel qu’un schéma en ASCII. Veux que je fasse ça ?
