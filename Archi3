@@ -1,0 +1,14 @@
+Voici une synthèse claire que tu peux mettre sur Confluence, simple et sans détails techniques :
+
+---
+
+### 🔹 ArchiUnit : à quoi ça sert
+
+ArchiUnit sert à **formaliser et vérifier la cohérence des composants** de nos applications. Il permet de s’assurer que chaque brique respecte les principes d’architecture définis, même au fil des évolutions et des changements.
+
+Par exemple, dans une application construite selon le principe de l’**architecture hexagonale**, ArchiUnit peut aider à garantir que le **cœur métier reste isolé** des dépendances extérieures (base de données, API, interfaces utilisateur), sans rentrer dans le détail de l’implémentation.
+L’intérêt est de **préserver la modularité et la maintenabilité**, et de faciliter l’évolution du système tout en réduisant les risques de couplages indésirables.
+
+---
+
+Si tu veux, je peux te proposer une **version encore plus courte et percutante** en 2-3 phrases, idéale pour un encadré Confluence ou une note d’intention en début de page.
