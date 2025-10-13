@@ -1,0 +1,110 @@
+Parfait ! Voici une **proposition de schéma textuel et explications** de ton exemple ArchUnit, que tu pourras ensuite mettre au propre avec **Griffly dans Confluence**. J’ai structuré le tout en sections : architecture logique, flux de dépendances et rôle des tests ArchUnit.
+
+---
+
+# 🏗️ Schéma textuel : Architecture et règles ArchUnit
+
+```
++-------------------+
+|   Controller      |
+|  (UserController) |
++-------------------+
+          |
+          v  dépend uniquement sur
++-------------------+
+|   Service Layer    |
+|   (UserService)    |
++-------------------+
+          |
+          v  dépend uniquement sur interfaces
++-------------------+
+| Connector Layer    |
+| (ExternalUserRepo) |
++-------------------+
+          ^
+          | implémente
++-------------------+
+| Repository Interface |
+|   (UserRepository)  |
++-------------------+
+          |
+          v
++-------------------+
+|       Model        |
+|       (User)       |
++-------------------+
+```
+
+---
+
+## 🔹 Explication du flux
+
+1. **Controller Layer (`UserController`)**
+
+   * Sert d’interface pour l’application (ex: API REST).
+   * Ne dépend que des services (`UserService`).
+   * Ne doit jamais accéder directement aux connecteurs (`ExternalUserRepository`) pour respecter le principe **DDD/Hexagonal**.
+
+2. **Service Layer (`UserService`)**
+
+   * Contient la logique métier.
+   * Dépend uniquement sur des **interfaces** (`UserRepository`) et pas sur les implémentations concrètes.
+   * Injection de dépendances via constructeur → découplage des connecteurs.
+
+3. **Connector Layer (`ExternalUserRepository`)**
+
+   * Adaptateur pour des systèmes externes (BDD, API…).
+   * Implémente les interfaces définies par le domaine/service.
+   * Ne doit pas dépendre d’autres connecteurs.
+
+4. **Model (`User`)**
+
+   * Objet métier transporté entre services et connecteurs.
+
+---
+
+## 🔹 Règles ArchUnit appliquées
+
+| Règle                                                      | Objectif                                                                              |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `service_layer_dependencies_are_respected`                 | Vérifie que les services ne dépendent pas directement des controllers ou connecteurs. |
+| `connectors_do_not_depend_on_one_another`                  | Empêche les connecteurs de dépendre les uns sur les autres.                           |
+| `services_do_not_depend_on_one_another`                    | Services indépendants → facilite test et maintenance.                                 |
+| `services_must_not_depend_on_controllers_transitively`     | Évite l’inversion de dépendance → architecture hexagonale respectée.                  |
+| `services_should_depend_on_interfaces_not_implementations` | Garantit le découplage via interfaces.                                                |
+| Frozen rules (`FreezingArchRule`)                          | Gèle les violations connues pour détecter les nouvelles régressions.                  |
+
+---
+
+## 🔹 Bonnes pratiques et importance d’ArchUnit
+
+1. **Maintien de la cohérence architecturale**
+
+   * Les règles empêchent les dépendances non souhaitées.
+   * Garantissent que la couche Service reste pure, sans “pollution” par les connecteurs.
+
+2. **Détection précoce des violations**
+
+   * Tests automatisés détectent dès la compilation si une nouvelle classe enfreint les règles.
+
+3. **Documentation vivante**
+
+   * La structure et les règles servent de documentation dynamique pour l’équipe.
+
+4. **Support pour l’évolution**
+
+   * La couche Service reste testable et facilement refactorable.
+   * Les connecteurs sont interchangeables grâce à l’injection via interfaces.
+
+---
+
+💡 **Astuce Confluence + Griffly :**
+
+* Chaque couche peut être représentée comme un **rectangle** avec des flèches vers les dépendances.
+* Les règles ArchUnit peuvent être annotées sous chaque flèche ou sous chaque couche pour clarifier les dépendances autorisées/interdites.
+
+---
+
+Si tu veux, je peux te générer **une version Griffly prête à copier-coller**, avec les rectangles et flèches codés directement en syntaxe Griffly pour Confluence.
+
+Veux‑tu que je fasse ça ?
