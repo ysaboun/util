@@ -1,0 +1,11 @@
+Voici un paragraphe prêt à être utilisé :
+
+---
+
+La compatibilité des Progressive Web Apps (PWA) varie selon les navigateurs et les systèmes d’exploitation. Le **Web App Manifest**, qui permet l’installation de la PWA sur l’écran d’accueil, est pris en charge depuis environ **2015 sur Chrome Desktop et Android**, et sur **Opera**. Firefox a ajouté ce support vers **2017**, tandis que Safari macOS et iOS l’intègrent depuis **2018**. Quant aux **notifications push**, elles sont disponibles sur **Chrome Desktop et Android depuis 2015**, sur **Firefox depuis 2017**, et sur Edge Chromium depuis **2020**. Safari macOS ne supporte les notifications push qu’à partir de **2022**, et iOS reste très restrictif, offrant uniquement l’installation de la PWA sans push (un support complet est prévu dans les versions récentes d’iOS). Globalement, Chrome et les navigateurs basés sur Chromium assurent le support le plus complet, tandis qu’iOS demeure la plateforme la plus limitée pour les fonctionnalités avancées des PWA.
+
+---
+
+Si tu veux, je peux te faire **une version encore plus synthétique de ce paragraphe**, sous forme de phrase courte “compatible sur… depuis…”, facile à insérer dans une présentation.
+
+Veux‑tu que je fasse ça ?
