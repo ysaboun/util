@@ -1,0 +1,46 @@
+package com.bnppf.facade.controller;
+
+import com.bnppf.facade.service.Account;
+import com.bnppf.facade.service.AccountService;
+import com.bnppf.filter.model.ApiNone;
+import com.bnppf.model.BusinessRequest;
+import com.bnppf.model.RequestResource;
+import com.bnppf.model.ValidatorFacade;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Collection;
+
+@RestController
+@RequestMapping("/fr/v1")
+public class HelloController {
+
+    private final AccountService accountService;
+    private final ValidatorFacade validatorFacade;
+
+    @Autowired
+    public HelloController(AccountService accountService,
+                           ValidatorFacade validatorFacade) {
+        this.accountService = accountService;
+        this.validatorFacade = validatorFacade;
+    }
+
+    @GetMapping(path= "/cpay_accounts")
+    public Collection<Account>  getAccounts(@RequestAttribute("business-request") BusinessRequest<ApiNone> businessRequest) {
+        return accountService.getAccount();
+    }
+
+    @PostMapping(path= "/cpay_event/event")
+    public String postAccounts(@RequestAttribute("business-request") BusinessRequest<RequestResource> businessRequest) {
+        validatorFacade.validate(businessRequest);
+        System.out.println("businessRequestvvv>>>"+businessRequest.getRequestId());
+        System.out.println("businessRequest>>>"+businessRequest.getAccessToken());
+        return String.format("hello BusinessRequest %s", businessRequest.getRequest().getAuthMode());
+    }
+
+    @GetMapping("/trusted/hello")
+    ResponseEntity<?> getHello(){
+        return ResponseEntity.ok("hello trusted uri");
+    }
+}
