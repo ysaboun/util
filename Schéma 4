@@ -1,0 +1,152 @@
+──────────────────────────────────────────────────────────────
+                       UTILISATEUR / NAVIGATEUR
+──────────────────────────────────────────────────────────────
+- Navigateur supportant PWA : Chrome, Firefox, Edge, Safari
+- Service Worker actif (sw.js)
+- Consentement explicite obtenu via :
+    Notification.requestPermission() → "granted"
+- Les données personnelles sont **pseudonymisées** pour RGPD
+──────────────────────────────────────────────────────────────
+               1️⃣ CREATION DU PUSH SUBSCRIPTION
+──────────────────────────────────────────────────────────────
+1. Enregistrement du Service Worker :
+   navigator.serviceWorker.register('/sw.js')
+2. Création PushSubscription :
+   navigator.serviceWorker.ready.then(registration.pushManager.subscribe({
+       userVisibleOnly: true,
+       applicationServerKey: VAPID_PUBLIC_KEY
+   }))
+3. PushSubscription retourné par le navigateur :
+   {
+       "endpoint": "https://fcm.googleapis.com/fcm/send/abcd1234...",
+       "keys": {
+           "p256dh": "BElcT1s8u1Q...",  // clé publique ECDH client
+           "auth": "8bT9sW..."           // clé courte pour authentification
+       }
+   }
+4. Transmission sécurisée au serveur backend via HTTPS POST
+   - URL : /api/save-subscription
+   - Corps : JSON de l’abonnement
+   - Vérification : consentement RGPD présent
+──────────────────────────────────────────────────────────────
+                2️⃣ STOCKAGE BACKEND ET PSEUDONYMISATION
+──────────────────────────────────────────────────────────────
+- Stockage sécurisé des abonnements : PostgreSQL / MongoDB
+- Champs :
+   - user_id interne ou pseudonyme
+   - navigateur + version
+   - date abonnement
+   - endpoint, p256dh, auth
+   - consentement RGPD
+- Encryption AES-256 des abonnements sensibles
+- Rotation régulière des clés serveur pour sécurité
+──────────────────────────────────────────────────────────────
+                3️⃣ GÉNÉRATION DU MESSAGE PUSH
+──────────────────────────────────────────────────────────────
+- Payload JSON :
+  {
+      "title": "Votre commande est livrée !",
+      "body": "Cliquez ici pour donner votre avis",
+      "icon": "/assets/icon.png",
+      "data": {
+          "orderId": "1234",
+          "callbackUrl": "https://example.com/review"
+      }
+  }
+- Personnalisation dynamique : templates + variables
+- Vérification : respect du consentement utilisateur
+──────────────────────────────────────────────────────────────
+                4️⃣ CHIFFREMENT E2E DU MESSAGE
+──────────────────────────────────────────────────────────────
+- Clé symétrique AES-GCM générée côté serveur
+- Dérivation clé symétrique via ECDH :
+    secret = ECDH(server_private_key, p256dh_client)
+- AES-GCM utilisé pour :
+    - Confidentialité
+    - Intégrité (tag GCM)
+- Résultat : payload chiffrée
+- Le serveur ne stocke pas la clé privée du client
+──────────────────────────────────────────────────────────────
+                5️⃣ AUTHENTIFICATION VAPID
+──────────────────────────────────────────────────────────────
+- Génération JWT signé avec clé privée serveur :
+  - header : alg=ES256, typ=JWT
+  - payload : aud=endpoint, exp=timestamp, sub=mailto:admin@example.com
+- JWT inséré dans header HTTP : Authorization: WebPush <JWT>
+- Permet au Push Service :
+   - de vérifier que l’envoi est autorisé
+   - de lier le domaine serveur au push
+──────────────────────────────────────────────────────────────
+                6️⃣ ENVOI AU PUSH SERVICE NAVIGATEUR
+──────────────────────────────────────────────────────────────
+- Endpoint : PushSubscription.endpoint
+- Méthode : HTTPS POST (HTTP/2 recommandé)
+- Headers :
+  - TTL : durée de vie du push offline
+  - Content-Encoding : "aes128gcm"
+  - Authorization : JWT VAPID
+- Corps : payload chiffrée
+- Push Service (FCM, Mozilla Push Service, APNs) :
+   - Vérifie JWT VAPID
+   - Stocke le push si navigateur hors ligne
+   - Envoie via canal persistant dès que navigateur reconnecté
+──────────────────────────────────────────────────────────────
+                7️⃣ SERVICE WORKER / NAVIGATEUR
+──────────────────────────────────────────────────────────────
+- Événement push déclenché côté client :
+  self.addEventListener('push', event => { ... })
+- Déchiffrement local AES-GCM avec clé dérivée ECDH
+- Affichage notification :
+  self.registration.showNotification(title, {
+      body: body,
+      icon: icon,
+      data: data
+  })
+- Gestion clic :
+  self.addEventListener('notificationclick', event => {
+      event.notification.close()
+      clients.openWindow(data.callbackUrl)
+  })
+──────────────────────────────────────────────────────────────
+                8️⃣ POINTS SENSIBLES RGPD & SECURITÉ
+──────────────────────────────────────────────────────────────
+- Consentement explicite avant abonnement obligatoire
+- Pseudonymisation et chiffrement côté serveur
+- Chiffrement E2E du payload → Push Service ne peut pas lire
+- JWT VAPID → authentifie serveur, protège contre spoofing
+- HTTPS obligatoire pour tous les échanges
+- Gestion TTL / purge abonnements expirés
+- Possibilité de désabonnement à tout moment
+- Logs pseudonymisés pour analytics
+──────────────────────────────────────────────────────────────
+                9️⃣ MONITORING ET ANALYTICS
+──────────────────────────────────────────────────────────────
+- Statistiques backend :
+   - push envoyé, push reçu, clics
+   - abonnements périmés
+   - taux d’échec / erreur 404 ou 410
+- Dashboard admin :
+   - visualisation engagement
+   - audit sécurité et conformité RGPD
+──────────────────────────────────────────────────────────────
+                       RÉSUMÉ PIPELINE TECHNIQUE
+──────────────────────────────────────────────────────────────
+[Navigateur / Service Worker]
+      │ consentement
+      ▼
+[PushSubscription JSON sécurisé]
+      │ HTTPS
+      ▼
+[Serveur Backend]
+      │ Payload JSON
+      │ Chiffrement AES-GCM + clé ECDH
+      │ JWT VAPID
+      ▼
+[Push Service navigateur (FCM / Mozilla / APNs)]
+      │ Stocke si offline / envoie via HTTP2 / WS
+      ▼
+[Service Worker PWA]
+      │ Déchiffre & affiche notification
+      ▼
+[Utilisateur]
+      │ clic / interaction
