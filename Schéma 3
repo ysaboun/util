@@ -1,0 +1,67 @@
+┌─────────────────────────────────────────────┐
+│           UTILISATEUR / NAVIGATEUR         │
+│ - Navigateur support PWA (Chrome, Firefox) │
+│ - Service Worker actif (sw.js)             │
+│ - Consentement explicite RGPD              │
+└─────────────────────────────────────────────┘
+                  │
+                  │ PushSubscription Request (Notification.requestPermission)
+                  ▼
+┌─────────────────────────────────────────────┐
+│      PUSH SUBSCRIPTION / NAVIGATEUR        │
+│ - endpoint (URL Push Service)             │
+│ - clés ECDH : p256dh + auth               │
+│ - Transmis via HTTPS POST au backend       │
+│ - Stockage pseudonymisé / RGPD compliant  │
+└─────────────────────────────────────────────┘
+                  │ HTTPS sécurisé
+                  ▼
+┌─────────────────────────────────────────────┐
+│            SERVEUR BACKEND                  │
+│ - Stocke abonnement chiffré                │
+│ - Génère payload JSON : title, body, icon  │
+│ - Dérive clé AES-GCM via ECDH (server_private_key + p256dh) │
+│ - Chiffrement E2E de la payload            │
+│ - JWT VAPID signé (Authorization header)   │
+│ - Vérification consentement RGPD           │
+└─────────────────────────────────────────────┘
+                  │ HTTPS POST / HTTP2
+                  │ Headers : Authorization(VAPID), TTL, Content-Encoding
+                  ▼
+┌─────────────────────────────────────────────┐
+│       PUSH SERVICE DU NAVIGATEUR           │
+│ (FCM / Mozilla Push Service / APNs Safari) │
+│ - Vérifie JWT VAPID                        │
+│ - Stocke notification si utilisateur offline │
+│ - Envoie push via canal persistant (HTTP2/WS) │
+│ - Applique TTL et purge abonnements invalides │
+└─────────────────────────────────────────────┘
+                  │ Canal sécurisé HTTP2/WebSocket
+                  ▼
+┌─────────────────────────────────────────────┐
+│        SERVICE WORKER / PWA NAVIGATEUR     │
+│ - Événement push déclenché : 'push'       │
+│ - Déchiffrement AES-GCM avec clé ECDH      │
+│ - Affiche notification : showNotification()│
+│ - Gestion du clic : openWindow(data.url)   │
+│ - Option désabonnement possible            │
+└─────────────────────────────────────────────┘
+                  │ Interaction utilisateur
+                  ▼
+┌─────────────────────────────────────────────┐
+│             UTILISATEUR FINAL               │
+│ - Lit / interagit avec la notification     │
+│ - Engagement remonté au backend pour stats │
+└─────────────────────────────────────────────┘
+──────────────────────────────────────────────
+            POINTS SENSIBLES / RGPD / SECURITÉ
+──────────────────────────────────────────────
+- Consentement explicite avant abonnement obligatoire
+- Pseudonymisation des utilisateurs côté serveur
+- Chiffrement E2E AES-GCM + ECDH : Push Service ne peut pas lire
+- JWT VAPID : authentification serveur et protection spoofing
+- TLS/HTTPS obligatoire sur tous les flux
+- TTL et purge automatique des abonnements périmés
+- Option désabonnement immédiate
+- Logs pseudonymisés pour analytics et audit
+──────────────────────────────────────────────
