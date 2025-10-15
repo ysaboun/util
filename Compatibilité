@@ -1,0 +1,27 @@
+Voici un tableau synthétique qui résume la **compatibilité des PWA** pour le **Web App Manifest (installation)** et les **notifications push**, par navigateur et système d’exploitation :
+
+| Navigateur / OS              | Manifest PWA (installation) | Notifications Push (PWA)  | Notes                                                                                |
+| ---------------------------- | --------------------------- | ------------------------- | ------------------------------------------------------------------------------------ |
+| **Chrome Desktop**           | Depuis v40 (~2015)          | Depuis v42 (~2015)        | Support complet sur Windows, macOS, Linux                                            |
+| **Chrome Android**           | Depuis v40 (~2015)          | Depuis v42 (~2015)        | Installation sur écran d’accueil et push notif supportées                            |
+| **Firefox Desktop**          | Depuis v52 (~2017)          | Depuis v44 (~2017)        | Push notif supportées sur Windows, macOS, Linux                                      |
+| **Firefox Android**          | Depuis v52 (~2017)          | Depuis v44 (~2017)        | Support partiel pour installation, push notif OK                                     |
+| **Edge Chromium**            | Depuis v79 (~2020)          | Depuis v79 (~2020)        | Edge “legacy” limité, Edge Chromium full support                                     |
+| **Safari macOS**             | Depuis v11.1 (~2018)        | Depuis v16 (~2022)        | Installation via “Ajouter à l’écran d’accueil”                                       |
+| **Safari iOS**               | Depuis iOS 11.3 (~2018)     | Limité / partiel (~2020+) | Installation possible, push notif non supportées (iOS 17 devrait introduire support) |
+| **Opera Desktop / Android**  | Depuis 2016                 | Depuis 2016               | Basé sur Chromium, support similaire à Chrome                                        |
+| **Samsung Internet Android** | Depuis 2017                 | Depuis 2017               | Basé sur Chromium, support PWA et push complet                                       |
+
+---
+
+### ✅ Observations
+
+1. **Manifest PWA / installation** : supporté depuis **2015-2016** sur Chrome et Opera, puis progressivement Firefox et Safari.
+2. **Push notifications** : supportées depuis **2015 sur Chrome**, mais Safari iOS reste la dernière plateforme à limiter ce mécanisme.
+3. **iOS reste le plus restrictif** : installation OK, push notif encore très limité.
+
+---
+
+Si tu veux, je peux te transformer ce tableau en **un paragraphe narratif prêt à utiliser** dans un document ou article sur les PWA et leur compatibilité.
+
+Veux‑tu que je fasse ça ?
