@@ -1,0 +1,162 @@
+──────────────────────────────────────────────────────────────
+                   1️⃣ UTILISATEUR / NAVIGATEUR
+──────────────────────────────────────────────────────────────
+- Navigateur supportant PWA : Chrome, Firefox, Edge, Safari
+- Service Worker actif (sw.js)
+- Consentement explicite RGPD obtenu :
+    Notification.requestPermission() → "granted"
+- Données personnelles pseudonymisées
+- Erreurs possibles :
+    - Consentement refusé → push non abonné
+    - Service Worker non supporté → fallback email/SMS
+
+──────────────────────────────────────────────────────────────
+           2️⃣ CREATION DU PUSH SUBSCRIPTION
+──────────────────────────────────────────────────────────────
+navigator.serviceWorker.ready.then(
+    registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: VAPID_PUBLIC_KEY (256 bits, EC P-256)
+    })
+)
+
+PushSubscription JSON renvoyé :
+{
+  "endpoint": "https://fcm.googleapis.com/fcm/send/abcd1234...",
+  "keys": {
+    "p256dh": "BElcT1s8u1Q...", // Clé publique client EC P-256
+    "auth": "8bT9sW..."          // Clé courte HMAC 16 octets
+  }
+}
+
+Transmission au serveur backend :
+- Méthode HTTPS POST
+- Corps : JSON subscription
+- Pseudonymisation obligatoire RGPD
+- Erreurs possibles :
+    - HTTPS non valide → push rejeté
+    - Endpoint expiré → nettoyage nécessaire
+
+──────────────────────────────────────────────────────────────
+         3️⃣ STOCKAGE BACKEND ET PSEUDONYMISATION
+──────────────────────────────────────────────────────────────
+- Stockage sécurisé (PostgreSQL / MongoDB)
+- Chiffrement AES-256 des abonnements
+- Champs :
+    - user_id interne/pseudonyme
+    - navigateur/version
+    - endpoint, p256dh, auth
+    - date création
+    - consentement RGPD
+- Rotation régulière des clés
+- Erreurs possibles :
+    - DB inaccessible → push non sauvegardé
+    - Données personnelles mal pseudonymisées → non-conformité RGPD
+
+──────────────────────────────────────────────────────────────
+           4️⃣ GÉNÉRATION DU MESSAGE PUSH
+──────────────────────────────────────────────────────────────
+Payload JSON :
+{
+  "title": "Votre commande est livrée !",
+  "body": "Cliquez ici pour donner votre avis",
+  "icon": "/assets/icon.png",
+  "data": { "orderId": "1234", "callbackUrl": "https://..." }
+}
+
+- Templates dynamiques selon l’événement
+- Vérification consentement utilisateur
+
+──────────────────────────────────────────────────────────────
+           5️⃣ CHIFFREMENT E2E DU MESSAGE
+──────────────────────────────────────────────────────────────
+- Clé symétrique AES-128-GCM générée côté serveur
+- Dérivation clé via ECDH (server_private_key 256 bits + p256dh client)
+- AES-GCM assure :
+    - Confidentialité
+    - Intégrité (tag 128 bits)
+- Payload chiffrée envoyée
+- Erreurs possibles :
+    - Clé incorrecte → déchiffrement côté client impossible
+    - Payload mal formée → rejet Push Service
+
+──────────────────────────────────────────────────────────────
+              6️⃣ AUTHENTIFICATION VAPID
+──────────────────────────────────────────────────────────────
+- JWT VAPID signé EC P-256 :
+Header :
+{
+  "alg": "ES256",
+  "typ": "JWT"
+}
+Payload :
+{
+  "aud": "https://fcm.googleapis.com/fcm/send/abcd1234...",
+  "exp": timestamp+12h,
+  "sub": "mailto:admin@example.com"
+}
+- Authorization HTTP Header : WebPush <JWT>
+- Vérification Push Service obligatoire
+- Erreurs possibles :
+    - JWT expiré → push rejeté
+    - Signature invalide → push rejeté
+
+──────────────────────────────────────────────────────────────
+     7️⃣ ENVOI AU PUSH SERVICE DU NAVIGATEUR
+──────────────────────────────────────────────────────────────
+- Endpoint : PushSubscription.endpoint
+- Méthode HTTPS POST (HTTP/2)
+- Headers : TTL, Content-Encoding=aes128gcm, Authorization=JWT
+- Push Service (FCM / Mozilla / APNs) :
+    - Vérifie JWT VAPID
+    - Stocke si utilisateur offline (TTL configurable)
+    - Envoi via canal persistant (HTTP2/WebSocket)
+- Erreurs possibles :
+    - Endpoint 404/410 → abonnement périmé → suppression
+    - Volume trop élevé → throttling nécessaire
+
+──────────────────────────────────────────────────────────────
+             8️⃣ SERVICE WORKER / PWA NAVIGATEUR
+──────────────────────────────────────────────────────────────
+self.addEventListener('push', event => {
+    const payload = decrypt(event.data.arrayBuffer(), clientPrivateKey);
+    self.registration.showNotification(payload.title, {
+        body: payload.body,
+        icon: payload.icon,
+        data: payload.data
+    });
+});
+
+- Déchiffrement AES-GCM local
+- Gestion clic :
+self.addEventListener('notificationclick', event => {
+    event.notification.close();
+    clients.openWindow(payload.data.callbackUrl);
+});
+- Désabonnement possible à tout moment
+- Erreurs possibles :
+    - Clé privée non disponible → déchiffrement impossible
+    - Service Worker inactif → notification perdue
+
+──────────────────────────────────────────────────────────────
+           9️⃣ UTILISATEUR FINAL / INTERACTION
+──────────────────────────────────────────────────────────────
+- Lit / clique / ignore la notification
+- Interaction remontée au backend pour analytics
+- Statistiques pseudonymisées :
+    - Push envoyé, reçu, clic
+    - Taux d’échec / abonnements invalides
+
+──────────────────────────────────────────────────────────────
+            🔒 POINTS SENSIBLES SÉCURITÉ & RGPD
+──────────────────────────────────────────────────────────────
+- Consentement explicite avant abonnement
+- Pseudonymisation + stockage chiffré
+- Chiffrement E2E AES-GCM + ECDH
+- JWT VAPID : authentification serveur
+- TLS/HTTPS obligatoire sur tous les flux
+- TTL et purge automatique des abonnements expirés
+- Désabonnement immédiat possible côté client
+- Logs pseudonymisés pour audit RGPD
+
+──────────────────────────────────────────────────────────────
