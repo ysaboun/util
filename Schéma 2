@@ -1,0 +1,46 @@
+[ UTILISATEUR / NAVIGATEUR ]
+   │ Consentement RGPD explicite
+   │
+   ▼
+[ PushSubscription ]
+   │ JSON : { endpoint, p256dh, auth }
+   │ HTTPS sécurisé → Backend
+   │ Pseudonymisation + stockage chiffré
+   ▼
+[ SERVEUR BACKEND / EVENT ENGINE ]
+   │ Génère payload JSON
+   │ Dérive clé AES-GCM via ECDH (server_private_key + p256dh)
+   │ Chiffrement E2E de la payload
+   │ JWT VAPID signé → Authorization header
+   │ Vérification consentement RGPD
+   │
+   ▼ HTTPS POST / HTTP2 / Headers TTL + Content-Encoding
+[ PUSH SERVICE DU NAVIGATEUR ]
+(FCM / Mozilla / APNs Safari)
+   │ Vérifie JWT VAPID → authentifie serveur
+   │ Stocke notification si utilisateur offline
+   │ Envoie via canal persistant (HTTP2 / WebSocket)
+   │ Applique TTL et purge abonnements invalides
+   ▼ Canal sécurisé
+[ SERVICE WORKER / PWA ]
+   │ Événement 'push' déclenché
+   │ Déchiffrement AES-GCM local
+   │ Affichage notification showNotification()
+   │ Gestion clic : clients.openWindow(data.url)
+   │ Option désabonnement possible
+   ▼
+[ UTILISATEUR FINAL ]
+   │ Interaction / clic / engagement
+   │ Stats remontées au backend
+──────────────────────────────────────────────
+        POINTS CRITIQUES SÉCURITÉ & RGPD
+──────────────────────────────────────────────
+- Consentement explicite obligatoire
+- Pseudonymisation + stockage chiffré côté serveur
+- Chiffrement E2E (AES-GCM + ECDH) : Push Service ne peut pas lire
+- JWT VAPID : authentification serveur
+- TLS/HTTPS obligatoire
+- TTL + purge des abonnements expirés
+- Logs pseudonymisés pour analytics et audit
+- Désabonnement immédiat possible côté client
+──────────────────────────────────────────────
