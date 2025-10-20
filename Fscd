@@ -1,0 +1,38 @@
+Voici un schéma textuel simple pour illustrer l’architecture avec le **pattern contrôle façade**, adapté à ton exemple :
+
+```
+ ┌─────────────────────┐
+ │  Client / Frontend  │
+ │  (Web / Mobile)     │
+ └─────────┬───────────┘
+           │ Requête HTTP/REST JSON
+           ▼
+ ┌─────────────────────┐
+ │ Controller / API    │
+ │ (Spring RestController) │
+ └─────────┬───────────┘
+           │ Transmet l’objet RequestResource
+           ▼
+ ┌───────────────────────────┐
+ │ ValidatorFacade (Façade) │
+ │ - Bean Validation         │
+ │ - CoherenceConstraint     │
+ │ - Centralise les règles  │
+ └─────────┬─────────────────┘
+           │ Si valide -> métier
+           │ Sinon -> exception / log
+           ▼
+ ┌─────────────────────┐
+ │ Service Métiers     │
+ │ (Business Logic)    │
+ └─────────────────────┘
+```
+
+**Explications et références :**
+
+* Le **ValidatorFacade** illustre le pattern **Facade**, centralisant les validations et déchargeant la couche métier. Cela améliore la **maintenabilité** et la **testabilité**.
+* La validation via Bean Validation et contraintes personnalisées permet de se conformer aux principes de **defense-in-depth** et de **fail-safe defaults** recommandés par [OWASP ASVS v4.0.3](https://owasp.org/www-project-application-security-verification-standard/) (contrôle des entrées).
+* Le découplage des couches et la vérification des données avant traitement se rapproche des bonnes pratiques de sécurité des API, recommandées dans [RFC 7807](https://datatracker.ietf.org/doc/html/rfc7807) pour la gestion d’erreurs, et [OWASP Top 10](https://owasp.org/www-project-top-ten/) (A1 – Broken Access Control, A5 – Security Misconfiguration, A10 – Insufficient Logging & Monitoring).
+* Le pattern favorise également l’**idempotence** et la cohérence des données, conformément aux recommandations d’architecture orientée services et CQRS pour éviter des effets secondaires non contrôlés.
+
+Si tu veux, je peux te proposer une **version enrichie du schéma textuel avec les flux de validation, d’erreur et de logging** pour que ce soit utilisable directement dans une présentation. Veux‑tu que je fasse ça ?
