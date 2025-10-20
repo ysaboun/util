@@ -1,0 +1,221 @@
+
+Dans une architecture orientée métier, il est recommandé d’introduire une **couche de “facade de contrôle”** — ici représentée par la classe `ValidatorFacade` — afin de centraliser les validations métiers et techniques avant toute exécution de logique applicative. Ce pattern permet de séparer clairement la **vérification de cohérence des données d’entrée** (validation syntaxique et sémantique) du traitement métier lui-même. En combinant les annotations JSR-380 (Bean Validation) avec des contraintes personnalisées comme `@CoherenceConstraint`, on garantit que chaque requête respecte les règles de cohérence attendues, tout en maintenant un code lisible et facilement extensible. Cette approche s’inscrit dans une architecture propre (Clean Architecture), où la couche d’entrée (interface web ou API) délègue la validation à une façade spécialisée avant de faire appel aux services métiers.
+
+Sur le plan de la sécurité, cette démarche renforce la **défense en profondeur** conformément aux bonnes pratiques OWASP : elle évite les données incohérentes ou manipulées dès la frontière applicative, limite les risques d’injection ou d’exécution imprévue, et garantit la traçabilité des erreurs. Dans cet exemple, la classe `RequestResource` définit la structure de la requête et son auto-cohérence via la méthode `isValid()`, tandis que `CoherenceConstraintValidator` contrôle dynamiquement que l’objet respecte bien cette logique. En pratique, cela permet de bloquer toute requête invalide avant qu’elle n’atteigne la couche métier — un principe fondamental pour la robustesse, la maintenabilité et la sécurité d’un système d’information.
+import javax.validation.Constraint;
+
+import javax.validation.Payload;
+
+import java.lang.annotation.Retention;
+
+import java.lang.annotation.Target;
+
+
+
+import static java.lang.annotation.ElementType.*;
+
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+
+
+@Target({FIELD, PARAMETER, TYPE})
+
+@Retention(RUNTIME)
+
+@Constraint(validatedBy = CoherenceConstraintValidator.class)
+
+public @interface CoherenceConstraint {
+
+    String message() default "Fields are not coherent";
+
+    Class<?>[] groups() default {};
+
+    Class<? extends Payload>[] payload() default {};
+
+}
+
+import javax.validation.ConstraintValidator;
+
+import javax.validation.ConstraintValidatorContext;
+
+
+
+public class CoherenceConstraintValidator implements ConstraintValidator<CoherenceConstraint, RequestResource> {
+
+    @Override
+
+    public boolean isValid(RequestResource requestResource, ConstraintValidatorContext context) {
+
+        boolean isValid = true;
+
+        if(requestResource != null){
+
+            if(!requestResource.isValid()){
+
+                isValid = false;
+
+                context.buildConstraintViolationWithTemplate("requestResource data must contain facade")
+
+                        .addPropertyNode("requestResource data")
+
+                        .addConstraintViolation();
+
+                /*
+
+                    String defaultErrorMessage = context.getDefaultConstraintMessageTemplate();
+
+                    String formattedErrorMessage = String.format(defaultErrorMessage, new Date());
+
+
+
+                    context.disableDefaultConstraintViolation();
+
+                    context.buildConstraintViolationWithTemplate(formattedErrorMessage).addConstraintViolation();
+
+                */
+
+            }
+
+            return isValid;
+
+        }
+
+        return true;
+
+    }
+
+} 
+
+
+
+import javax.validation.constraints.AssertTrue;
+
+
+
+@CoherenceConstraint()
+
+public class RequestResource {
+
+
+
+    private String authMode;
+
+    private String typeEvent;
+
+
+
+    public String getAuthMode() {
+
+        return authMode;
+
+    }
+
+
+
+    public void setAuthMode(String authMode) {
+
+        this.authMode = authMode;
+
+    }
+
+
+
+    public String getTypeEvent() {
+
+        return typeEvent;
+
+    }
+
+
+
+    public void setTypeEvent(String typeEvent) {
+
+        this.typeEvent = typeEvent;
+
+    }
+
+
+
+    @AssertTrue()
+
+    public boolean isValid(){
+
+       return AuthMode.isValid(getAuthMode()) &&
+
+                TypeEvent.isValid(getTypeEvent());
+
+    }
+
+}
+
+
+import org.slf4j.Logger;
+
+import org.slf4j.LoggerFactory;
+
+import org.springframework.stereotype.Component;
+
+
+
+import javax.validation.ConstraintViolation;
+
+import javax.validation.Validation;
+
+import javax.validation.Validator;
+
+import javax.validation.ValidatorFactory;
+
+import java.util.Set;
+
+
+
+@Component
+
+public class ValidatorFacade {
+
+    private static final Logger log = LoggerFactory.getLogger(ValidatorFacade.class);
+
+
+
+    private Validator getValidator(){
+
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+
+        return factory.getValidator();
+
+    }
+
+
+
+    public void validate(BusinessRequest<RequestResource> businessRequest){
+
+        Set<ConstraintViolation<RequestResource>> violations = getValidator().validate(businessRequest.getRequest());
+
+
+
+        if (!violations.isEmpty()) {
+
+            StringBuilder sb = new StringBuilder();
+
+            for (ConstraintViolation<RequestResource> violation : violations) {
+
+                sb.append("violation message = "+violation.getMessage()).append("\n");
+
+            }
+
+            throw new IllegalArgumentException("request validation failed: \n" + sb);
+
+        }
+
+
+
+        log.info("control facade successfully");
+
+    }
+
+}
+
+
+
+genre moi deux simple paragraphe pour preconiser a haut niveau architecture solution pour pattern et bonne pratique et secu owasp des controle facade metier
+et donner explication simple pour cet exemple
