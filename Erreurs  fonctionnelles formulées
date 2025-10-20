@@ -1,0 +1,71 @@
+Pour harmoniser et sécuriser la gestion des erreurs fonctionnelles et techniques, un pattern très efficace est le **“Error Handling / Response Wrapper”** combiné avec un **Centralized Exception Handling**. Voici une description simple :
+
+---
+
+### **Pattern proposé : Centralized Error Handling avec Response Wrapper**
+
+L’idée est de **centraliser toutes les erreurs** dans un point unique (souvent un `@ControllerAdvice` dans Spring) et de **normaliser la réponse** envoyée au client, qu’il s’agisse d’une erreur fonctionnelle (ex. données invalides) ou technique (ex. base de données indisponible). On encapsule la réponse dans un **objet standard** qui contient par exemple :
+
+* `status` : code HTTP ou code métier
+* `message` : message lisible pour l’utilisateur
+* `errorCode` : identifiant unique de l’erreur pour traçabilité
+* `timestamp` : pour le suivi
+* `details` : facultatif, uniquement pour les logs internes
+
+Cela permet de :
+
+1. **Sécuriser les informations** : pas de stacktrace exposée au client, respectant OWASP A6 – Sensitive Data Exposure.
+2. **Uniformiser les flux** : toutes les erreurs sont traitées de la même manière, facilitant la consommation par le frontend ou les microservices.
+3. **Faciliter le logging et monitoring** : traçabilité complète pour audits ou alertes.
+
+---
+
+### **Exemple textuel simple d’architecture :**
+
+```
+ ┌─────────────────────┐
+ │  Client / Frontend  │
+ └─────────┬───────────┘
+           │ Requête HTTP
+           ▼
+ ┌─────────────────────┐
+ │ Controller / API    │
+ └─────────┬───────────┘
+           │
+           ▼
+ ┌───────────────────────────────┐
+ │ ValidatorFacade / Service     │
+ │ - Valide RequestResource      │
+ │ - Exécute la logique métier  │
+ └─────────┬────────────────────┘
+           │ Exception levée ?
+           ▼
+ ┌───────────────────────────────┐
+ │ GlobalExceptionHandler         │
+ │ (@ControllerAdvice)            │
+ │ - Capture toutes exceptions    │
+ │ - Génère ResponseWrapper       │
+ └─────────┬────────────────────┘
+           │
+           ▼
+ ┌─────────────────────┐
+ │ Client / Frontend   │
+ │ - reçoit message    │
+ │   uniforme          │
+ └─────────────────────┘
+```
+
+---
+
+### **Références et bonnes pratiques :**
+
+* **OWASP Top 10** :
+
+  * A6 – Sensitive Data Exposure : ne pas exposer de stacktrace en production.
+  * A10 – Insufficient Logging & Monitoring : toutes les erreurs doivent être loggées et monitorées.
+* **RFC 7807 – Problem Details for HTTP APIs** : standardise la structure des erreurs HTTP (`type`, `title`, `status`, `detail`, `instance`).
+* **Clean Architecture / Hexagonal** : sépare la logique métier de la gestion des erreurs techniques, facilitant testabilité et maintenabilité.
+
+---
+
+Si tu veux, je peux te **combiner ce pattern avec le pattern façade de validation** pour obtenir une architecture complète “sécurisée + harmonisée + testable”, avec un schéma textuel unifié. Cela pourrait servir directement pour tes présentations ou documents techniques. Veux‑tu que je fasse ça ?
