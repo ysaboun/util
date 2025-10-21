@@ -1,0 +1,95 @@
+#!/bin/bash
+
+# Configuration
+DOMAIN="${1:-localhost:8080}"
+PROTOCOL="${2:-http}"
+BASE_URL="$PROTOCOL://$DOMAIN"
+
+# Couleurs
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "${YELLOW}🔍 Scan de sécurité Spring Boot - $BASE_URL${NC}"
+echo "================================================"
+
+check_endpoint() {
+    local endpoint="$1"
+    local description="$2"
+    local url="$BASE_URL$endpoint"
+    
+    echo -n "Testing $endpoint ($description)... "
+    
+    response=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 "$url")
+    
+    case $response in
+        200|204)
+            echo -e "${RED}❌ VULNÉRABLE ($response)${NC}"
+            return 1
+            ;;
+        401|403)
+            echo -e "${GREEN}✅ SÉCURISÉ ($response - Authentification requise)${NC}"
+            return 0
+            ;;
+        404)
+            echo -e "${GREEN}✅ SÉCURISÉ ($response - Non trouvé)${NC}"
+            return 0
+            ;;
+        000)
+            echo -e "${YELLOW}⚠️  INACCESSIBLE (Timeout/Connection refused)${NC}"
+            return 2
+            ;;
+        *)
+            echo -e "${YELLOW}⚠️  CODE $response${NC}"
+            return 2
+            ;;
+    esac
+}
+
+# Compteurs
+vulnerable=0
+secure=0
+unknown=0
+
+echo -e "\n${YELLOW}1. Vérification DevTools...${NC}"
+check_endpoint "/devtools/health" "Health DevTools" || ((vulnerable++))
+check_endpoint "/devtools/restart" "Restart DevTools" || ((vulnerable++))
+check_endpoint "/devtools/livereload" "LiveReload DevTools" || ((vulnerable++))
+check_endpoint "/.~~spring-boot!~/restart" "Remote Restart" || ((vulnerable++))
+
+echo -e "\n${YELLOW}2. Vérification Actuator...${NC}"
+check_endpoint "/actuator" "Actuator Root" || ((vulnerable++))
+check_endpoint "/actuator/env" "Environment Variables" || ((vulnerable++))
+check_endpoint "/actuator/beans" "Spring Beans" || ((vulnerable++))
+check_endpoint "/actuator/configprops" "Configuration Properties" || ((vulnerable++))
+check_endpoint "/actuator/mappings" "URL Mappings" || ((vulnerable++))
+check_endpoint "/actuator/health" "Health Info" || ((secure++))
+check_endpoint "/actuator/info" "App Info" || ((secure++))
+
+echo -e "\n${YELLOW}3. Vérification endpoints classiques...${NC}"
+check_endpoint "/manage/health" "Management Health" || ((vulnerable++))
+check_endpoint "/monitoring/health" "Monitoring Health" || ((vulnerable++))
+check_endpoint "/api/health" "API Health" || ((vulnerable++))
+
+echo -e "\n${YELLOW}4. Vérification H2 Console (si utilisée)...${NC}"
+check_endpoint "/h2-console" "H2 Database Console" || ((vulnerable++))
+
+# Résumé
+echo "================================================"
+echo -e "${YELLOW}📊 RÉSULTAT DU SCAN:${NC}"
+
+if [ $vulnerable -eq 0 ]; then
+    echo -e "${GREEN}✅ TOUT EST SÉCURISÉ - Aucun endpoint sensible exposé${NC}"
+else
+    echo -e "${RED}❌ $vulnerable ENDPOINT(S) VULNÉRABLE(S) DÉTECTÉ(S)${NC}"
+    echo -e "${YELLOW}🚨 ACTION REQUISE: Sécurisez ces endpoints immédiatement!${NC}"
+fi
+
+echo -e "\n${YELLOW}💡 RECOMMANDATIONS:${NC}"
+echo "1. Désactivez DevTools en production"
+echo "2. Restreignez l'exposure d'Actuator: management.endpoints.web.exposure.include=health"
+echo "3. Ajoutez une authentification sur les endpoints de management"
+echo "4. Utilisez un réseau privé pour les endpoints sensibles"
+
+exit $vulnerable
