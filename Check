@@ -1,0 +1,45 @@
+# Production sécurisée
+spring.devtools.add-properties=false
+management.server.port=-1  # Désactiver le port séparé
+management.endpoints.web.exposure.include=health,info
+
+# DÉSACTIVER DevTools explicitement
+spring.devtools.restart.enabled=false
+spring.devtools.remote.secret=  # Laisser vide
+spring.devtools.livereload.enabled=false
+
+# Sécuriser les endpoints Actuator
+management.endpoints.enabled-by-default=false
+management.endpoint.health.enabled=true  # Uniquement health
+
+Exclusion dans le packaging Maven/Gradle
+<!-- Dans pom.xml -->
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <configuration>
+                <excludeDevtools>true</excludeDevtools>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+
+Configuration de sécurité recommandée :
+# Production sécurisée
+spring.devtools.add-properties=false
+management.server.port=-1  # Désactiver le port séparé
+management.endpoints.web.exposure.include=health,info
+
+
+#!/bin/bash
+DOMAIN="votre-domaine.com"
+
+echo "🔍 Scan des endpoints DevTools..."
+ENDPOINTS=("/devtools/health" "/devtools/restart" "/devtools/livereload" "/.~~spring-boot!~/restart")
+
+for endpoint in "${ENDPOINTS[@]}"; do
+    response=$(curl -s -o /dev/null -w "%{http_code}" "https://$DOMAIN$endpoint")
+    echo "$endpoint : HTTP $response"
+done
