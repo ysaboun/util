@@ -1,0 +1,95 @@
+Voici comment fonctionne **OWASP Dependency-Check** et comment l’utiliser pour détecter les bibliothèques vulnérables :
+
+---
+
+### **1. Principe**
+
+Dependency-Check analyse les dépendances d’un projet (Java, .NET, Python, Node.js, Ruby…) et les compare avec les **bases de données de vulnérabilités connues** (NVD – National Vulnerability Database).
+
+* Il identifie les librairies et leurs versions.
+* Il signale si elles ont des **CVE (Common Vulnerabilities and Exposures)**.
+* Il produit des **rapports détaillés** (HTML, XML, CSV) pour suivi et remédiation.
+
+---
+
+### **2. Installation**
+
+#### Via CLI :
+
+1. Télécharger le binaire depuis : [https://owasp.org/www-project-dependency-check/](https://owasp.org/www-project-dependency-check/)
+2. Décompresser et ajouter le dossier `bin` à ton PATH.
+
+#### Via Maven (Java) :
+
+```xml
+<plugin>
+    <groupId>org.owasp</groupId>
+    <artifactId>dependency-check-maven</artifactId>
+    <version>8.3.1</version>
+    <executions>
+        <execution>
+            <goals>
+                <goal>check</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
+```
+
+#### Via Gradle (Java) :
+
+```groovy
+plugins {
+    id "org.owasp.dependencycheck" version "8.3.1"
+}
+dependencyCheck {
+    format = 'HTML'
+    failBuildOnCVSS = 7
+}
+```
+
+---
+
+### **3. Analyse locale**
+
+* Avec CLI :
+
+```bash
+dependency-check --project "MonProjet" --scan ./src --format HTML --out ./report
+```
+
+* `--scan ./src` : dossier source ou build contenant les dépendances
+
+* `--format HTML` : sortie en HTML (lecture facile)
+
+* `--out ./report` : dossier pour stocker le rapport
+
+* Avec Maven :
+
+```bash
+mvn verify
+```
+
+Le rapport est généré dans `target/dependency-check-report.html`.
+
+---
+
+### **4. Analyse automatisée**
+
+* Intégrable dans **CI/CD** (Jenkins, GitLab CI, Bitbucket Pipelines).
+* Permet de **bloquer le build** si une dépendance critique vulnérable est détectée.
+* Permet de maintenir un **tableau de suivi des vulnérabilités dans le temps**.
+
+---
+
+### **5. Points clés**
+
+* Détecte uniquement les vulnérabilités **connues** (CVE).
+* Utile pour tous les types de projets qui utilisent des dépendances tierces.
+* Rapports adaptés pour **audits sécurité et conformité**.
+
+---
+
+Si tu veux, je peux te **préparer un exemple concret de configuration OWASP Dependency-Check pour un projet Java Bitbucket**, avec génération automatique de rapport HTML pour ton audit.
+
+Veux‑tu que je fasse ça ?
