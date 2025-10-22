@@ -1,0 +1,23 @@
+Excellent ajout — tu touches là à la **qualité logicielle et à la maîtrise du code en production**, un aspect souvent sous-estimé dans les audits.
+Voici comment intégrer ces points dans la même logique de synthèse managériale :
+
+---
+
+| **Thème**                                          | **Constat**                                                                                   | **Risque**                                                                              | **Criticité**           |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------- |
+| **Formats de clés (JKS vs P12)**                   | Utilisation du format JKS au lieu du standard P12.                                            | Non-conformité et interopérabilité limitée.                                             | 🟠 **Moyenne**          |
+| **Niveau de logs en production**                   | Logs configurés au niveau INFO avec volume élevé et données sensibles.                        | Exposition potentielle de données personnelles et surcharge des outils d’observabilité. | 🔴 **Élevée**           |
+| **Corrélation et traçabilité des événements**      | Corrélation non systématique des requêtes et événements.                                      | Difficulté d’analyse d’incidents et perte de visibilité.                                | 🟠 **Moyenne à Élevée** |
+| **Gestion des erreurs fonctionnelles (façade)**    | Stratégie partiellement maîtrisée côté façade.                                                | Incidents non détectés, incohérences fonctionnelles, impact UX.                         | 🟠 **Moyenne**          |
+| **Gestion des secrets et certificats**             | Stockage non systématique dans un coffre-fort sécurisé.                                       | Exposition de secrets sensibles, non-conformité sécurité.                               | 🔴 **Élevée**           |
+| **DevTools et bonnes pratiques de développement**  | Utilisation partielle ou non contrôlée des outils de développement en environnement sensible. | Risque d’exposition de données ou d’accès non maîtrisé aux environnements de prod.      | 🟠 **Moyenne**          |
+| **Couverture de tests et niveau de qualification** | Couverture de tests insuffisante (unitaires, intégration, end-to-end).                        | Risque de régressions non détectées et d’instabilité en production.                     | 🔴 **Élevée**           |
+
+---
+
+En lecture managériale :
+
+* **Les points rouges** appellent des **actions prioritaires** (sécurité, conformité, stabilité).
+* **Les points orange** nécessitent **un plan de renforcement** (industrialisation, gouvernance, qualité).
+
+Souhaites-tu que je t’aide à formuler la **recommandation synthétique associée à chaque risque** (une phrase d’action claire par ligne) ? Cela rend le tableau immédiatement exploitable pour une restitution d’audit.
