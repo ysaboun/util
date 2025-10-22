@@ -1,0 +1,104 @@
+Parfait, on peut le faire très proprement en **Java avec Logback** en utilisant un **logger dédié pour le reporting fonctionnel** et en configurant un **appender séparé** pour stocker des statistiques agrégées. Voici une approche pratique et claire :
+
+---
+
+### **1. Définir un logger dédié dans le code**
+
+```java
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class TransactionService {
+
+    // Logger dédié au reporting fonctionnel
+    private static final Logger functionalLogger = LoggerFactory.getLogger("FunctionalReport");
+
+    public void processTransaction(String transactionId) {
+        long startTime = System.currentTimeMillis();
+
+        try {
+            // logique transactionnelle
+            functionalLogger.info("Transaction {} started", transactionId);
+
+            // ... traitement ...
+
+            functionalLogger.info("Transaction {} completed successfully in {} ms",
+                    transactionId, System.currentTimeMillis() - startTime);
+
+        } catch (Exception e) {
+            // logger principal pour WARN/ERROR
+            LoggerFactory.getLogger(TransactionService.class).error("Transaction {} failed", transactionId, e);
+        }
+    }
+}
+```
+
+* `functionalLogger` est **séparé du logger principal**, donc tu peux le configurer différemment dans Logback.
+* On log des **événements fonctionnels** (succès, temps, nombre de transactions) sans polluer le flux ERROR/WARN.
+
+---
+
+### **2. Configurer Logback pour ce logger**
+
+Fichier `logback.xml` :
+
+```xml
+<configuration>
+    <!-- Appender principal pour prod (WARN/ERROR) -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Appender dédié pour reporting fonctionnel (INFO) -->
+    <appender name="FUNCTIONAL_REPORT" class="ch.qos.logback.core.FileAppender">
+        <file>logs/functional-report.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Logger principal -->
+    <root level="WARN">
+        <appender-ref ref="STDOUT" />
+    </root>
+
+    <!-- Logger dédié reporting fonctionnel -->
+    <logger name="FunctionalReport" level="INFO" additivity="false">
+        <appender-ref ref="FUNCTIONAL_REPORT"/>
+    </logger>
+</configuration>
+```
+
+* `additivity="false"` empêche le logger fonctionnel de remonter vers le root et polluer la console principale.
+* Le fichier `functional-report.log` contient uniquement les **logs INFO de reporting fonctionnel**.
+
+---
+
+### **3. Agrégation**
+
+Pour les statistiques :
+
+* Tu peux **parser `functional-report.log`** avec un batch ou un outil comme ELK pour calculer :
+
+  * Nombre de transactions
+  * Nombre de succès / échecs
+  * Durée moyenne par transaction
+
+* Optionnel : utiliser **Logback Metrics Appender** ou un **custom appender** pour envoyer directement ces métriques vers Prometheus ou un dashboard.
+
+---
+
+Cette approche te permet de :
+
+* **Conserver le root logger en WARN/ERROR pour la production.**
+* **Générer un flux INFO dédié pour le reporting fonctionnel**.
+* **Aggréger ou visualiser facilement les informations sans exploser le volume principal.**
+
+---
+
+Si tu veux, je peux te proposer **une version “batch + dashboard” complète** qui lit ce logger fonctionnel et calcule automatiquement les statistiques pour un reporting managérial.
+
+Veux‑tu que je fasse ça ?
