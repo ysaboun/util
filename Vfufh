@@ -1,0 +1,61 @@
+Ah, là tu touches à une subtilité importante de **Logback et SLF4J** : les loggers héritent du niveau de **leur package parent** à moins d’être **définis explicitement**. Voyons comment ça fonctionne dans ton cas.
+
+---
+
+### **Situation**
+
+* Classe : `com.xxx.TransactionService`
+* Logger root : niveau `WARN` ou `ERROR`
+* Tu veux un logger dédié `FunctionalReport` à `INFO`
+
+---
+
+### **1. Logger dédié indépendant**
+
+Si tu fais :
+
+```java
+private static final Logger functionalLogger = LoggerFactory.getLogger("FunctionalReport");
+```
+
+alors :
+
+* Ce logger **n’hérite pas du package `com.xxx`**, il est **indépendant**.
+* Il utilisera le niveau défini explicitement dans `logback.xml` pour `FunctionalReport`.
+* Même si `com.xxx` est à `ERROR`, le logger `FunctionalReport` va logguer en `INFO` car tu as configuré :
+
+```xml
+<logger name="FunctionalReport" level="INFO" additivity="false">
+    <appender-ref ref="FUNCTIONAL_REPORT"/>
+</logger>
+```
+
+---
+
+### **2. Que se passe-t-il si tu utilises `LoggerFactory.getLogger(TransactionService.class)` pour INFO ?**
+
+* Le logger sera `com.xxx.TransactionService`
+* Comme le package `com.xxx` est configuré à `ERROR` :
+
+  * Les logs `INFO` **ne seront pas affichés** ni envoyés au root
+* Donc pour ton reporting fonctionnel, **il faut obligatoirement un logger dédié** avec un nom indépendant, par exemple `FunctionalReport`.
+
+---
+
+### **3. Bonnes pratiques**
+
+1. **Logger dédié** pour tout ce que tu veux reporter en INFO/DEBUG en prod.
+2. **additivity=false** pour éviter que les logs remontent vers le root ERROR/WARN.
+3. Les logs fonctionnels **n’utilisent pas le logger de la classe métier** si le package parent est en ERROR/WARN.
+
+---
+
+En résumé :
+
+> Même si `com.xxx` est à ERROR, ton logger `FunctionalReport` configuré à INFO va fonctionner correctement **tant qu’il est défini avec un appender séparé et additivity=false**.
+
+---
+
+Si tu veux, je peux te **montrer un exemple complet avec TransactionService dans com.xxx et FunctionalReport INFO qui fonctionne malgré le root ERROR**, prêt à mettre en prod.
+
+Veux‑tu que je fasse ça ?
