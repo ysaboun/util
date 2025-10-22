@@ -1,0 +1,29 @@
+Parfait, ce constat touche à **la duplication de code et au manque de standardisation**, ce qui est un point clé dans un audit managérial/architecture. On peut le formuler ainsi pour ton tableau ou diapo :
+
+---
+
+### **Formulation managériale du constat**
+
+**Constat :** peu de bibliothèques communes pour les filtres de sécurité et la corrélation ; le code est dupliqué d’un projet ou service à l’autre.
+
+**Risque :**
+
+* Augmentation de la **complexité de maintenance**.
+* **Risque d’incohérences** dans la sécurité et la traçabilité.
+* Difficulté à appliquer des **mises à jour ou correctifs** de façon uniforme.
+
+**Criticité :** 🟠 **Moyenne à Élevée** (selon l’importance des services impactés).
+
+---
+
+### **Option synthétique pour un tableau d’audit**
+
+| **Thème**                                      | **Constat**                                                                                        | **Risque**                                                                         | **Criticité**           |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------- |
+| **Duplication de code et librairies communes** | Peu de bibliothèques communes pour sécurité et corrélation ; code dupliqué entre projets/services. | Maintenance complexe, incohérences sécurité et corrélation, mise à jour difficile. | 🟠 **Moyenne à Élevée** |
+
+---
+
+Si tu veux, je peux **mettre à jour ton tableau complet d’audit avec cette ligne et toutes les autres**, pour avoir un **rapport synthétique prêt à présenter à un manager**.
+
+Veux‑tu que je fasse ça ?
