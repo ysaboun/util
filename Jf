@@ -1,0 +1,18 @@
+Parfait, on peut ajouter une ligne **sécurité et gestion des dépendances** avec un outil comme **JFrog Xray** dans ton tableau d’audit. Voici une version mise à jour :
+
+| **Thème**                                            | **Constat**                                                                                               | **Risque**                                                                               | **Criticité**           |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------- |
+| **Formats de clés (JKS vs P12)**                     | Utilisation du format JKS au lieu du standard P12.                                                        | Non-conformité et interopérabilité limitée.                                              | 🟠 **Moyenne**          |
+| **Niveau de logs en production**                     | Logs configurés au niveau DEBUG avec volume élevé et données sensibles.                                   | Exposition potentielle de données personnelles et surcharge des outils d’observabilité.  | 🔴 **Élevée**           |
+| **Corrélation et traçabilité des événements**        | Corrélation non systématique des requêtes et événements.                                                  | Difficulté d’analyse d’incidents et perte de visibilité.                                 | 🟠 **Moyenne à Élevée** |
+| **Gestion des erreurs fonctionnelles (façade)**      | Stratégie partiellement maîtrisée côté façade.                                                            | Incidents non détectés, incohérences fonctionnelles, impact UX.                          | 🟠 **Moyenne**          |
+| **Gestion des secrets et certificats**               | Stockage non systématique dans un coffre-fort sécurisé.                                                   | Exposition de secrets sensibles, non-conformité sécurité.                                | 🔴 **Élevée**           |
+| **DevTools et bonnes pratiques de développement**    | Utilisation partielle ou non contrôlée des outils de développement en environnement sensible.             | Risque d’exposition de données ou d’accès non maîtrisé aux environnements de prod.       | 🟠 **Moyenne**          |
+| **Couverture de tests et niveau de qualification**   | Couverture de tests insuffisante (unitaires, intégration, end-to-end).                                    | Risque de régressions non détectées et d’instabilité en production.                      | 🔴 **Élevée**           |
+| **Audit sécurité des dépendances (JFrog Xray, SCA)** | Absence ou utilisation partielle d’outils d’analyse de vulnérabilités dans les librairies et dépendances. | Introduction de vulnérabilités connues dans la production, non-conformité réglementaire. | 🔴 **Élevée**           |
+
+---
+
+Si tu veux, je peux te préparer **une version finale complète du tableau**, avec **toutes les lignes regroupées, couleurs, et phrases managériales ultra-synthétiques**, prête à mettre directement dans une diapo d’audit.
+
+Veux‑tu que je fasse ça ?
