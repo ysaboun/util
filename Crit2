@@ -1,0 +1,14 @@
+Parfait, si le niveau de logs concerné est **DEBUG** (et non INFO), voici la version corrigée et reformulée — plus juste techniquement, mais toujours compréhensible pour un public managérial :
+
+---
+
+| **Thème**                        | **Constat**                                                                                      | **Risque**                                                                              | **Criticité** |
+| -------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- | ------------- |
+| **Niveau de logs en production** | Logs configurés au niveau **DEBUG**, générant un volume important de données, parfois sensibles. | Exposition potentielle de données personnelles et surcharge des outils d’observabilité. | 🔴 **Élevée** |
+
+---
+
+Et si tu veux une phrase plus fluide pour un rapport managérial :
+**« Les logs sont actuellement configurés en niveau DEBUG en production, entraînant un volume excessif d’informations et un risque de divulgation de données sensibles. »**
+
+Souhaites-tu que je t’aide à reformuler **tout le tableau complet avec cette mise à jour** pour que l’ensemble reste cohérent ?
