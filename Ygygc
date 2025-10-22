@@ -1,0 +1,54 @@
+Ah, là on touche au **dilemme classique de l’observabilité en production** : tu veux **garder le niveau de log WARN/ERROR pour limiter le volume et protéger les données sensibles**, mais **avoir quand même un reporting sur le déroulement normal** (INFO) pour suivre la fonctionnalité.
+
+Voici comment gérer ça de manière pratique :
+
+---
+
+### **1. Séparer le flux log opérationnel et reporting**
+
+* **Logs ERROR/WARN** → stockés dans la chaîne principale pour alerter et corréler incidents.
+* **Logs INFO fonctionnels** → envoyés vers un **flux secondaire, filtré et agrégé** pour reporting.
+
+Exemples :
+
+* Un **logger dédié** pour le reporting fonctionnel, configuré avec un niveau INFO.
+* Stockage **agrégé** : nombre de transactions traitées, nombre de connexions réussies, durées, etc.
+* Ce flux peut être envoyé vers un **tableau de bord ou base analytique** distincte, sans polluer la production principale.
+
+---
+
+### **2. Enrichir WARN/ERROR avec du contexte**
+
+* Même si tu restes au niveau ERROR/WARN, chaque log peut **inclure des métadonnées résumant le déroulement** :
+
+  * Identifiant de transaction
+  * Service ou module
+  * Étapes majeures franchies
+* Cela permet de **reconstituer partiellement le parcours fonctionnel** en cas d’incident.
+
+---
+
+### **3. Échantillonnage des INFO**
+
+* Générer des logs INFO **uniquement pour un sous-ensemble de transactions** :
+
+  * Ex. 1 transaction sur 100, ou transactions aléatoires
+  * Permet de **suivre le déroulement fonctionnel** sans produire des millions de lignes.
+
+---
+
+### **4. Utiliser l’observabilité et l’agrégation**
+
+* **ELK / Datadog / Grafana Loki** : extraire des métriques depuis les logs INFO même si la production reste majoritairement en WARN/ERROR.
+* **Tableaux de bord** : compte de transactions, temps moyen de traitement, succès/failures, etc.
+* Les logs bruts ne sont pas conservés, seulement les **agrégats**.
+
+---
+
+### **Résumé pour managers**
+
+> « En production, nous conservons un niveau WARN/ERROR pour la sécurité et la performance, tout en extrayant et agrégeant les informations fonctionnelles depuis un flux INFO dédié ou échantillonné pour le reporting opérationnel. »
+
+Si tu veux, je peux te **faire un schéma simple montrant comment coexister ERROR/WARN et reporting INFO**, prêt à mettre sur une diapo.
+
+Veux‑tu que je fasse ça ?
