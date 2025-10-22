@@ -1,0 +1,82 @@
+Une requête HTTP avec l’en-tête `Accept-Encoding: gzip` indique au serveur que le client (navigateur, application ou API consumer) **accepte les réponses compressées avec l’algorithme Gzip**.
+C’est un mécanisme standard pour **réduire la taille du corps de la réponse** et donc améliorer les performances réseau.
+
+Voici comment ça fonctionne concrètement :
+
+---
+
+### 🔹 Exemple de requête HTTP
+
+```http
+GET /api/users HTTP/1.1
+Host: example.com
+Accept: application/json
+Accept-Encoding: gzip, deflate
+User-Agent: curl/8.0
+```
+
+### 🔹 Réponse du serveur (compressée)
+
+Si le serveur supporte Gzip, il renverra une réponse comme celle-ci :
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Encoding: gzip
+Content-Length: 132
+
+... données compressées en binaire ...
+```
+
+Le client doit alors **décompresser** le corps de la réponse avant de le lire.
+
+---
+
+### 🔹 En Java (exemple avec `HttpClient`)
+
+```java
+HttpClient client = HttpClient.newBuilder()
+    .build();
+
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("https://example.com/api/users"))
+    .header("Accept-Encoding", "gzip")
+    .build();
+
+HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+
+// Décompression automatique si "Content-Encoding: gzip"
+InputStream bodyStream = new GZIPInputStream(response.body());
+String responseBody = new String(bodyStream.readAllBytes(), StandardCharsets.UTF_8);
+
+System.out.println(responseBody);
+```
+
+---
+
+### 🔹 Points à noter
+
+* **Le serveur doit explicitement renvoyer `Content-Encoding: gzip`** pour que la compression soit appliquée.
+* Les frameworks comme **Spring Boot**, **Express.js**, ou **Nginx** peuvent gérer cela automatiquement.
+* Gzip est **sans perte**, donc la donnée décompressée est identique à l’originale.
+* D’autres encodages possibles : `deflate`, `br` (Brotli, plus efficace mais moins universel).
+
+---
+
+### 🔹 Exemple avec `curl`
+
+Tu peux tester la compression facilement :
+
+```bash
+curl -H "Accept-Encoding: gzip" -I https://example.com
+```
+
+Ou pour voir le contenu décompressé :
+
+```bash
+curl -H "Accept-Encoding: gzip" --compressed https://example.com
+```
+
+---
+
+Souhaites-tu que je te montre comment **activer la compression Gzip côté serveur**, par exemple sur **Spring Boot**, **Nginx**, ou **Express.js** ?
