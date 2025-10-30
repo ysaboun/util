@@ -1,0 +1,28 @@
+Parfait — tu viens d’identifier un ensemble de constats critiques qu’on peut transformer en **tableau d’analyse sécurité** très clair. Voici une version reformulée et structurée, pour que ce soit exploitable dans une démo, une présentation sécurité ou un rapport d’audit.
+
+---
+
+### 🔍 Tableau d’analyse – Persistance et risques des liens Excalidraw
+
+| **Test**                                                | **Description du scénario**                                                                                                                                                       | **Constat observé**                                                                                                                        | **Risques identifiés**                                                                                                                                                           |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Test 1 – Collaboration en direct**                    | User 1 crée un dessin sur Chrome et partage le lien de collaboration à User 2. User 1 ferme ensuite la session ou supprime le dessin localement.                                  | User 2 conserve l’accès complet au dessin, même après l’arrêt ou la suppression locale par User 1.                                         | Le contenu reste accessible sur le serveur Excalidraw ; la suppression n’est **pas propagée** aux autres participants. Risque de **fuite de données persistante**.               |
+| **Test 2 – Suppression côté client**                    | User 1 et User 2 suppriment tous deux le dessin dans leurs navigateurs.                                                                                                           | Le lien reste **fonctionnel** : une copie du dessin semble persistée côté serveur.                                                         | Risque de **données non effaçables** après partage ; absence de garantie de suppression effective sur le cloud. Potentiel **non-respect RGPD** si données personnelles incluses. |
+| **Test 3 – Lien partagé sans session de collaboration** | User 1 partage un lien Excalidraw (non-collaboratif). Une tierce personne (User X) y accède par hasard ou via re-partage. Même après suppression par User 1, le lien reste actif. | Le dessin reste visible par tout détenteur du lien. Aucune expiration automatique ni révocation du lien.                                   | Risque majeur de **consultation non autorisée**. Une simple fuite de lien (email, QR code, historique navigateur) compromet la confidentialité.                                  |
+| **Test 4 – Partage via QR code ou mail personnel**      | Un développeur interne génère un QR code du lien Excalidraw et l’envoie sur son email personnel ; un collègue scanne depuis son smartphone.                                       | Le lien circule hors du périmètre d’entreprise ; aucune traçabilité ni contrôle d’accès.                                                   | Risque de **diffusion accidentelle** vers des terminaux non maîtrisés. Données internes potentiellement exposées.                                                                |
+| **Test 5 – Fuite externe ou compromission serveur**     | Un attaquant obtient le lien (ou attaque la base d’Excalidraw.com) et accède à l’espace de stockage des sessions.                                                                 | Le lien contient à la fois l’ID et la clé de déchiffrement (dans l’URL). Si fuite serveur, les contenus peuvent être **décryptés et lus**. | Risque critique de **divulgation massive** si la base ou les liens fuitent. Le chiffrement côté client devient inutile dès lors que la clé est connue.                           |
+| **Test 6 – Lecture seule post-collaboration**           | Un utilisateur consulte un ancien schéma via un lien partagé, après fin de session collaborative.                                                                                 | Le schéma reste visible en lecture seule, sans possibilité de suppression à distance.                                                      | Risque de **persistance involontaire** des informations (ex. schémas d’architecture interne, credentials, secrets).                                                              |
+
+---
+
+### 🔒 Synthèse
+
+* **Les liens Excalidraw sont techniquement “éternels”** tant que le serveur conserve la session.
+* La **suppression locale n’a aucun effet sur la persistance côté serveur**.
+* Le **lien contient la clé de déchiffrement**, donc **toute fuite d’URL équivaut à une fuite du contenu**.
+* Aucune **revocation ni expiration automatique** n’est prévue dans la version publique d’Excalidraw.com.
+
+---
+
+Si tu veux, je peux t’ajouter une **colonne “Mesures préventives / recommandations”**, pour rendre ce tableau directement utilisable dans un audit sécurité (par exemple : ne pas utiliser Excalidraw.com pour contenu interne, héberger une instance locale, utiliser lien temporaire, etc.).
+Souhaites-tu que je te complète ça ?
