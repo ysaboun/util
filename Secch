@@ -1,0 +1,13 @@
+Un **SecChampion** (ou *Security Champion*) est un membre d’une équipe de développement ou d’architecture qui agit comme **référent sécurité interne**.
+
+Rôle principal :
+
+* **Sensibiliser** les développeurs aux bonnes pratiques de sécurité.
+* **Identifier et prévenir** les vulnérabilités dès le développement.
+* **Faire le lien** entre l’équipe Dev et l’équipe sécurité (DevSecOps).
+
+En pratique : c’est un développeur ou architecte qui reçoit une **formation sécurité renforcée** et qui devient le point de contact sécurité dans l’équipe, sans remplacer l’expert sécurité central.
+
+C’est un levier pour **intégrer la sécurité au quotidien** dans les projets.
+
+Si tu veux, je peux te proposer une **version très courte pour une recommandation**.
