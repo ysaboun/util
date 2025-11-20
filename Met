@@ -1,0 +1,3 @@
+Imagine que tu as 6 clés différentes pour ouvrir 6 coffres dans une forteresse. Chaque clé reste valide pendant 1 heure. Pendant cette heure, n’importe qui qui met la main sur une de ces clés peut ouvrir le coffre correspondant. Même si tu changes la serrure après avoir utilisé la dernière clé, les autres clés restent dans la nature jusqu’à leur expiration.
+
+Autrement dit : 6 tokens valides = 6 portes ouvertes pour un temps limité, ce qui représente une fenêtre d’exposition pour un attaquant.
